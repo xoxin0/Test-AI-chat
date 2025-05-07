@@ -1,0 +1,22 @@
+$background-color: #161633;
+$background-chat-color: #393985;
+$light-color: #f1f1f1;
+$border-color: #6868de;
+$dark-color: #01011f;
+$button-and-messages-color: #007bff;
+
+@mixin ui-button {
+  transition: 0.4s;
+  padding: 8px 20px;
+  background: $button-and-messages-color;
+  color: $light-color;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    transition: 0.4s;
+    background-color: $dark-color;
+    transform: scale(1.05);
+  }
+}

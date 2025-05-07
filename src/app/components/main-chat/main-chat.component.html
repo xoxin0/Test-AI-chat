@@ -1,0 +1,41 @@
+<div class="container">
+
+  <div class="chat-container">
+    <header class="header-container">
+      <h1 class="chat-header">TestAI</h1>
+      <button
+        (click)="clearChat()"
+        class="button-clear-chat"
+      >
+        Очистить
+      </button>
+    </header>
+
+    <div class="messages">
+      <div
+        *ngFor="let msg of messages"
+        [class.user]="msg.isUser"
+        class="message"
+      >
+        {{ msg.text }}
+      </div>
+    </div>
+
+    <div class="input-container">
+      <input
+        [(ngModel)]="userInput"
+        (keyup.enter)="sendMessage()"
+        placeholder="Введите сообщение..."
+        class="input-message"
+      >
+
+      <button
+        (click)="sendMessage()"
+        class="send-button"
+      >
+        Отправить
+      </button>
+    </div>
+  </div>
+
+</div>
