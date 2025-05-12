@@ -16,6 +16,7 @@
         *ngFor="let msg of messages"
         [class.user]="msg.isUser"
         class="message"
+        markdown
       >
         {{ msg.text }}
       </div>

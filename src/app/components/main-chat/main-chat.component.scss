@@ -43,23 +43,28 @@
       height: 500px;
       overflow-y: auto;
       margin-bottom: 15px;
+      scrollbar-width: thin;
+      scrollbar-color: $button-and-messages-color $background-color;
 
       .message {
         padding: 8px 12px;
         margin: 8px;
         border-radius: 15px;
-        max-width: 70%;
+        width: fit-content;
+        word-break: break-word;
       }
 
       .message.user {
         background: $button-and-messages-color;
         color: $light-color;
         margin-left: auto;
+        max-width: 50%;
       }
 
       .message:not(.user) {
         background: $light-color;
         margin-right: auto;
+        max-width: 70%;
       }
     }
 

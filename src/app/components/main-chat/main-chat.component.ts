@@ -4,10 +4,10 @@ import {
   OnInit
 } from '@angular/core';
 
+import { MarkdownModule } from 'ngx-markdown';
 import { FormsModule } from '@angular/forms';
 import { NgForOf } from '@angular/common';
 import { Mistral } from '@mistralai/mistralai';
-import { ContentChunk } from '@mistralai/mistralai/models/components';
 import { API_KEY } from '../../../API_KEY';
 import { LocalService } from '../../services/local-service.service';
 
@@ -15,18 +15,19 @@ import { LocalService } from '../../services/local-service.service';
   selector: 'app-main-chat',
   imports: [
     FormsModule,
-    NgForOf
+    NgForOf,
+    MarkdownModule
   ],
   templateUrl: './main-chat.component.html',
   styleUrls: ['./main-chat.component.scss']
 })
 
-export class MainChatComponent implements OnInit{
+export class MainChatComponent implements OnInit {
   private apiKey = API_KEY.MISTRAL_API_KEY;
   private client = new Mistral({ apiKey: this.apiKey });
   private localService = inject(LocalService);
 
-  public messages: { text: string | ContentChunk[] | null, isUser: boolean }[] = [];
+  public messages: { text: string, isUser: boolean }[] = [];
   public userInput = '';
 
   ngOnInit() {
@@ -51,8 +52,10 @@ export class MainChatComponent implements OnInit{
       });
 
       if ( chatResponse && chatResponse.choices && chatResponse.choices.length > 0 ) {
+        const textToString = chatResponse.choices[0].message.content!.toString();
+
         this.messages.push({
-          text: chatResponse.choices[0].message.content!,
+          text: textToString,
           isUser: false
         });
       }
