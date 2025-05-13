@@ -1,5 +1,4 @@
 <div class="container">
-
   <div class="chat-container">
     <header class="header-container">
       <h1 class="chat-header">TestAI</h1>
@@ -16,9 +15,13 @@
         *ngFor="let msg of messages"
         [class.user]="msg.isUser"
         class="message"
-        markdown
       >
-        {{ msg.text }}
+        <div class="markdown-wrapper" markdown [data]="msg.text"></div>
+      </div>
+      <div *ngIf="isLoading" class="message loading">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
       </div>
     </div>
 
@@ -28,15 +31,16 @@
         (keyup.enter)="sendMessage()"
         placeholder="Введите сообщение..."
         class="input-message"
+        [disabled]="isLoading"
       >
 
       <button
         (click)="sendMessage()"
         class="send-button"
+        [disabled]="isLoading || !userInput.trim()"
       >
         Отправить
       </button>
     </div>
   </div>
-
 </div>
