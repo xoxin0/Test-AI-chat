@@ -6,7 +6,8 @@ import {
 
 import {
   NgForOf,
-  NgIf
+  NgIf,
+  NgOptimizedImage
 } from '@angular/common';
 
 import { MarkdownModule } from 'ngx-markdown';
@@ -22,7 +23,8 @@ import { MistralChatMessage } from '../../interfaces/mistral-chat-message';
     FormsModule,
     NgForOf,
     MarkdownModule,
-    NgIf
+    NgIf,
+    NgOptimizedImage
   ],
   templateUrl: './main-chat.component.html',
   styleUrls: ['./main-chat.component.scss']

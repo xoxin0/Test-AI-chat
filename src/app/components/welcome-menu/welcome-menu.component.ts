@@ -4,10 +4,13 @@ import {
 } from '@angular/core';
 
 import { Router } from '@angular/router';
+import { NgOptimizedImage } from '@angular/common';
 
 @Component({
   selector: 'app-welcome-menu',
-  imports: [],
+  imports: [
+    NgOptimizedImage
+  ],
   templateUrl: './welcome-menu.component.html',
   styleUrl: './welcome-menu.component.scss'
 })
