@@ -1,4 +1,4 @@
 export interface Message {
-  message: string;
+  text: string;
   isUser: boolean;
 }

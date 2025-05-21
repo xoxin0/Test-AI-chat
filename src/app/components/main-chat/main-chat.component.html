@@ -17,13 +17,17 @@
       </button>
     </header>
 
-    <div class="messages">
+    <div class="messages" #messagesContainer>
       <div
         *ngFor="let msg of messages"
         [class.user]="msg.isUser"
         class="message"
       >
-        <div class="markdown-wrapper" markdown [data]="msg.text"></div>
+        <div
+          class="markdown-wrapper"
+          markdown
+          [data]="msg.text"
+        ></div>
       </div>
       <div *ngIf="isLoading" class="message loading">
         <span class="dot"></span>
@@ -38,7 +42,6 @@
         (keyup.enter)="sendMessage()"
         placeholder="Введите сообщение..."
         class="input-message"
-        [disabled]="isLoading"
       >
 
       <button
