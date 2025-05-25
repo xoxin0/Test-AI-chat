@@ -1,9 +1,5 @@
 @use "../../common/style" as *;
 
-* {
-  font-family: "JetBrains Mono", monospace;
-}
-
 .container {
   height: 100vh;
   background-color: $background-color;

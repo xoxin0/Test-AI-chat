@@ -4,7 +4,8 @@ import {
   inject,
   OnChanges,
   OnInit,
-  ViewChild
+  ViewChild,
+  AfterViewChecked
 } from '@angular/core';
 
 import {
@@ -18,8 +19,11 @@ import { FormsModule } from '@angular/forms';
 import { Mistral } from '@mistralai/mistralai';
 import { API_KEY } from '../../../API_KEY';
 import { LocalService } from '../../services/local-storage.service';
+import { ClipboardService } from '../../services/clipboard.service';
 import { MistralChatMessage } from '../../interfaces/mistral-chat-message';
 import { Message } from '../../interfaces/message';
+import { FocusInputService } from '../../services/focus-input.service';
+import { ChatCompletionResponse } from '@mistralai/mistralai/models/components';
 
 @Component({
   selector: 'app-main-chat',
@@ -34,13 +38,15 @@ import { Message } from '../../interfaces/message';
   styleUrls: ['./main-chat.component.scss']
 })
 
-export class MainChatComponent implements OnInit, OnChanges {
-  private readonly apiKey = API_KEY.MISTRAL_API_KEY;
-  private readonly client = new Mistral({ apiKey: this.apiKey });
-  private readonly _localService = inject(LocalService);
-  private readonly STORAGE_KEY = 'chatMessages';
-  private readonly MODEL = 'mistral-large-latest';
-  private readonly INITIAL_MESSAGE = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
+export class MainChatComponent implements OnInit, OnChanges, AfterViewChecked {
+  private readonly API_KEY: string = API_KEY.MISTRAL_API_KEY;
+  private readonly CLIENT: Mistral = new Mistral({ apiKey: this.API_KEY });
+  private readonly _localService: LocalService = inject(LocalService);
+  private readonly _clipboardService: ClipboardService = inject(ClipboardService);
+  private readonly _focusInputService: FocusInputService = inject(FocusInputService);
+  private readonly STORAGE_KEY: string = 'chatMessages';
+  private readonly MODEL: string = 'mistral-large-latest';
+  private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
 
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
 
@@ -48,22 +54,21 @@ export class MainChatComponent implements OnInit, OnChanges {
   public userInput: string = '';
   public isLoading: boolean = false;
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadMessages();
   }
 
-  ngOnChanges() {
-    this.focusInput();
+  ngOnChanges(): void {
+    this._focusInputService.focusInput();
   }
 
-  private focusInput(): void {
-    document.querySelector("input")!.focus();
+  ngAfterViewChecked(): void {
+    this.addCopyButtonsToCodeBlocks();
   }
 
-  // добавление сообщений из localStorage в массив всех сообщений
   private loadMessages(): void {
     try {
-      const savedMessages = this._localService.getData(this.STORAGE_KEY);
+      const savedMessages: string | null = this._localService.getData(this.STORAGE_KEY);
       this.messages = savedMessages ? JSON.parse(savedMessages) : [];
 
       if (this.messages.length === 0) {
@@ -78,7 +83,74 @@ export class MainChatComponent implements OnInit, OnChanges {
     }
   }
 
-  // добавление начального сообщения
+  private addCopyButtonsToCodeBlocks(): void {
+    const codeBlocks: NodeListOf<Element> = document.querySelectorAll('pre:not(.copy-button-added)');
+
+    codeBlocks.forEach(codeBlock => {
+      // обертка для позиционирования хэдера с кодом
+      const wrapper: HTMLDivElement = document.createElement('div');
+      wrapper.className = 'code-block-wrapper';
+      codeBlock.parentNode?.insertBefore(wrapper, codeBlock);
+      wrapper.appendChild(codeBlock);
+
+      const headerContainer: HTMLDivElement = document.createElement('div');
+      headerContainer.className = 'code-header';
+
+      let language = 'code';
+      const codeElement: HTMLElement | null = codeBlock.querySelector('code');
+      if (codeElement) {
+        const classes: string[] = [...codeElement.classList];
+        const languageClass: string | undefined = classes.find(cls => cls.startsWith('language-'));
+
+        if (languageClass) {
+          language = languageClass.replace('language-', '');
+        }
+      }
+
+      const languageLabel: HTMLSpanElement = document.createElement('span');
+      languageLabel.className = 'language-label';
+      languageLabel.innerText = language;
+
+      const copyButton: HTMLButtonElement = document.createElement('button');
+      copyButton.className = 'copy-button';
+      copyButton.innerText = 'Copy';
+      copyButton.addEventListener('click', () => this.copyCodeContent(codeBlock, copyButton));
+
+      headerContainer.appendChild(languageLabel);
+      headerContainer.appendChild(copyButton);
+
+      wrapper.insertBefore(headerContainer, codeBlock);
+
+      codeBlock.classList.add('copy-button-added');
+    });
+  }
+
+  private copyCodeContent(codeBlock: Element, button: HTMLButtonElement): void {
+    if (button.innerText !== 'Copy') {
+      return;
+    }
+
+    const code: string = codeBlock.textContent || '';
+
+    this._clipboardService.copyToClipboard(code)
+      .then(() => {
+        const originalText: string = button.innerText;
+        button.innerText = 'Copied ✓';
+
+        setTimeout(() => {
+          button.innerText = originalText;
+        }, 2000);
+      })
+      .catch(err => {
+        console.error('Ошибка при копировании текста:', err);
+        button.innerText = 'Ошибка';
+
+        setTimeout(() => {
+          button.innerText = 'Copy';
+        }, 2000);
+      });
+  }
+
   private addInitialMessage(): void {
     this.messages.push({ text: this.INITIAL_MESSAGE, isUser: false });
     this.saveMessagesToLocalStorage();
@@ -86,7 +158,7 @@ export class MainChatComponent implements OnInit, OnChanges {
 
   // отправка запроса к API, принятие ответа
   public async sendMessage(): Promise<void> {
-    const userMessage = this.userInput.trim();
+    const userMessage: string = this.userInput.trim();
 
     if (!userMessage) return;
 
@@ -99,7 +171,6 @@ export class MainChatComponent implements OnInit, OnChanges {
     try {
       const historyMessages: MistralChatMessage[] = [];
 
-      // начальные настройки для ии
       historyMessages.push({
         role: 'system',
         content: 'Ты - TestAI, дружелюбный и полезный ассистент. Всегда представляйся как TestAI, если тебя спросят, как тебя зовут.'
@@ -107,7 +178,6 @@ export class MainChatComponent implements OnInit, OnChanges {
 
       const recentMessages: Message[] = this.messages.slice();
 
-      // проходит по всем сообщениям и преобразует их в формат для API Mistral
       recentMessages.forEach(msg => {
         historyMessages.push({
           role: msg.isUser ? 'user' : 'assistant',
@@ -118,14 +188,13 @@ export class MainChatComponent implements OnInit, OnChanges {
       historyMessages.push({ role: 'user', content: userMessage });
 
       // отправка запроса к API
-      const chatResponse = await this.client.chat.complete({
+      const chatResponse: ChatCompletionResponse = await this.CLIENT.chat.complete({
         model: this.MODEL,
         messages: historyMessages
       });
 
-      // добавление ответа в массив messages
       if (chatResponse && chatResponse.choices && chatResponse.choices.length > 0) {
-        const textToString = chatResponse.choices[0].message.content!.toString();
+        const textToString: string = chatResponse.choices[0].message.content!.toString();
         this.addAiMessage(textToString);
       }
     } catch (error) {
@@ -162,7 +231,7 @@ export class MainChatComponent implements OnInit, OnChanges {
     try {
       setTimeout(() => {
         if (this.messagesContainer) {
-          const container = this.messagesContainer.nativeElement;
+          const container: HTMLElement = this.messagesContainer.nativeElement;
           container.scrollTop = container.scrollHeight;
         }
       }, 0);

@@ -1,9 +1,5 @@
 @use "../../common/style" as *;
 
-* {
-  font-family: "JetBrains Mono", monospace;
-}
-
 .container {
   background-color: $background-color;
   width: 100%;
@@ -54,6 +50,25 @@
         animation: fadeIn 0.3s ease;
 
         ::ng-deep {
+          .code-block-wrapper {
+            margin: 10px 0;
+          }
+
+          .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: $dark-color;
+            border-radius: 10px 10px 0 0;
+            padding: 5px 10px;
+          }
+
+          .language-label {
+            color: $light-color;
+            font-size: 12px;
+            opacity: 0.8;
+          }
+
           pre {
             color: $light-color;
             max-width: 100%;
@@ -61,13 +76,23 @@
             word-wrap: break-word;
             overflow-x: auto;
             background-color: $background-color;
-            margin: 10px 0 10px 0;
             padding: 10px 15px;
-            border-radius: 10px;
+            border-radius: 0 0 10px 10px;
           }
 
-          ul {
-            padding: 15px;
+          .copy-button {
+            @include ui-button;
+            padding: 5px 15px;
+            font-size: 12px;
+
+            &:hover {
+              transition: 0.2s;
+              transform: none;
+            }
+          }
+
+          ul, ol {
+            margin-left: 30px;
           }
         }
       }

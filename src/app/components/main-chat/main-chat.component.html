@@ -23,11 +23,10 @@
         [class.user]="msg.isUser"
         class="message"
       >
-        <div
+        <markdown
           class="markdown-wrapper"
-          markdown
           [data]="msg.text"
-        ></div>
+        ></markdown>
       </div>
       <div *ngIf="isLoading" class="message loading">
         <span class="dot"></span>
