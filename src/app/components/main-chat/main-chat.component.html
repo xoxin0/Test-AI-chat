@@ -1,4 +1,11 @@
 <div class="container">
+  <app-side-bar
+    [chats]="chats"
+    [activeChat]="activeChat"
+    (selectChat)="onSelectChat($event)"
+    (addChat)="addNewChat()"
+    (removeChat)="onRemoveChat($event)"
+  ></app-side-bar>
   <div class="chat-container">
     <header class="header-container">
       <img

@@ -1,0 +1,50 @@
+@use "../../common/style" as *;
+
+.sidebar {
+  width: 100%;
+  height: 98vh;
+  background-color: $dark-color;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 20px 0 20px;
+
+  .new-chat-btn {
+    @include ui-button;
+    width: 50%;
+    align-self: end;
+    margin-bottom: 20px;
+  }
+
+  .chats-list {
+    flex: 1;
+    overflow-y: auto;
+
+    .chat-item {
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: $light-color;
+
+      &.active {
+        background-color: $button-and-messages-color;
+        color: $light-color;
+      }
+
+      .delete-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        color: darken($light-color, 40%);
+
+        &:hover {
+          color: $delete-chat-hover-color;
+        }
+      }
+    }
+  }
+}
