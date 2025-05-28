@@ -1,4 +1,13 @@
 <div class="container">
+  <app-side-bar
+    [chats]="chats"
+    [activeChat]="activeChat"
+    [isOpen]="sidebarIsOpen"
+    (selectChat)="onSelectChat($event)"
+    (addChat)="addNewChat()"
+    (removeChat)="onRemoveChat($event)"
+    (closeSidebar)="onCloseSidebar($event)"
+  ></app-side-bar>
   <div class="chat-container">
     <header class="header-container">
       <img

@@ -35,11 +35,10 @@
     }
 
     .messages {
+      @include scrollbar;
       height: 70vh;
       overflow-y: auto;
       margin-bottom: 15px;
-      scrollbar-width: thin;
-      scrollbar-color: $button-and-messages-color $background-color;
 
       .message {
         padding: 8px 12px;
@@ -93,6 +92,10 @@
 
           ul, ol {
             margin-left: 30px;
+          }
+
+          h1, h2, h3, h4, h5, h6 {
+            margin: 20px 0 5px 0;
           }
         }
       }

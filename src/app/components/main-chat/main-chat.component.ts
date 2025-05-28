@@ -2,7 +2,6 @@ import {
   Component,
   ElementRef,
   inject,
-  OnChanges,
   OnInit,
   ViewChild,
   AfterViewChecked
@@ -16,14 +15,13 @@ import {
 
 import { MarkdownModule } from 'ngx-markdown';
 import { FormsModule } from '@angular/forms';
-import { Mistral } from '@mistralai/mistralai';
-import { API_KEY } from '../../../API_KEY';
-import { LocalService } from '../../services/local-storage.service';
+import { LocalStorageService } from '../../services/local-storage.service';
 import { ClipboardService } from '../../services/clipboard.service';
-import { MistralChatMessage } from '../../interfaces/mistral-chat-message';
+import { MistralApiService } from '../../services/mistral-api.service';
 import { Message } from '../../interfaces/message';
+import { SideBarComponent } from '../side-bar/side-bar.component';
+import { Chat } from '../../interfaces/chat';
 import { FocusInputService } from '../../services/focus-input.service';
-import { ChatCompletionResponse } from '@mistralai/mistralai/models/components';
 
 @Component({
   selector: 'app-main-chat',
@@ -32,33 +30,35 @@ import { ChatCompletionResponse } from '@mistralai/mistralai/models/components';
     NgForOf,
     MarkdownModule,
     NgIf,
-    NgOptimizedImage
+    NgOptimizedImage,
+    SideBarComponent
   ],
   templateUrl: './main-chat.component.html',
   styleUrls: ['./main-chat.component.scss']
 })
 
-export class MainChatComponent implements OnInit, OnChanges, AfterViewChecked {
-  private readonly API_KEY: string = API_KEY.MISTRAL_API_KEY;
-  private readonly CLIENT: Mistral = new Mistral({ apiKey: this.API_KEY });
-  private readonly _localService: LocalService = inject(LocalService);
+export class MainChatComponent implements OnInit, AfterViewChecked {
+  private readonly _localService: LocalStorageService = inject(LocalStorageService);
   private readonly _clipboardService: ClipboardService = inject(ClipboardService);
   private readonly _focusInputService: FocusInputService = inject(FocusInputService);
-  private readonly STORAGE_KEY: string = 'chatMessages';
-  private readonly MODEL: string = 'mistral-large-latest';
+  private readonly _mistralApiService: MistralApiService = inject(MistralApiService);
   private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
 
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
 
-  public messages: Message[] = [];
+  public chats: Chat[] = [];
+  public activeChat: string = '';
   public userInput: string = '';
   public isLoading: boolean = false;
+  public sidebarIsOpen: boolean = true;
 
-  ngOnInit(): void {
-    this.loadMessages();
+  get messages(): Message[] {
+    const chat = this.chats.find(c => c.id === this.activeChat);
+    return chat ? chat.messages : [];
   }
 
-  ngOnChanges(): void {
+  ngOnInit(): void {
+    this.loadChats();
     this._focusInputService.focusInput();
   }
 
@@ -66,21 +66,79 @@ export class MainChatComponent implements OnInit, OnChanges, AfterViewChecked {
     this.addCopyButtonsToCodeBlocks();
   }
 
-  private loadMessages(): void {
-    try {
-      const savedMessages: string | null = this._localService.getData(this.STORAGE_KEY);
-      this.messages = savedMessages ? JSON.parse(savedMessages) : [];
+  private loadChats(): void {
+    const savedChats = this._localService.getData('chats');
+    if (savedChats) {
+      this.chats = JSON.parse(savedChats);
 
-      if (this.messages.length === 0) {
-        this.addInitialMessage();
+      const activeChat = this._localService.getData('activeChat');
+      if (activeChat && this.chats.some(c => c.id === activeChat)) {
+        this.activeChat = activeChat;
+      } else {
+        this.activeChat = this.chats[0]?.id || '';
       }
-
-      setTimeout(() => this.scrollToBottom(), 0);
-    } catch (error) {
-      console.error('Ошибка при загрузке сообщений:', error);
-      this.messages = [];
-      this.addInitialMessage();
     }
+
+    if (this.chats.length === 0) {
+      this.addNewChat();
+    }
+
+    setTimeout(() => this.scrollToBottom(), 0);
+  }
+
+  public addNewChat(): void {
+    const newChat: Chat = {
+      id: Date.now().toString(),
+      title: `Новый чат`,
+      messages: [{ text: this.INITIAL_MESSAGE, isUser: false }]
+    };
+
+    this.chats.push(newChat);
+    this.activeChat = newChat.id;
+    this.saveChats();
+    this._focusInputService.focusInput();
+  }
+
+  public onSelectChat(chatId: string): void {
+    this.activeChat = chatId;
+    this._localService.saveData('activeChat', chatId);
+    this.scrollToBottom();
+    this._focusInputService.focusInput();
+  }
+
+  public onRemoveChat(chatId: string): void {
+    const indexChat = this.chats.findIndex(c => c.id === chatId);
+    if (indexChat === -1) return;
+
+    this.chats.splice(indexChat, 1);
+
+    if (chatId === this.activeChat) {
+      this.activeChat = this.chats[0]?.id || '';
+
+      if (this.chats.length === 0) {
+        this.addNewChat();
+        return;
+      }
+    }
+
+    this.saveChats();
+  }
+
+  public onCloseSidebar(isOpen: boolean): void {
+    this.sidebarIsOpen = isOpen;
+  }
+
+  public clearChat(): void {
+    const chat = this.chats.find(c => c.id === this.activeChat);
+    if (chat) {
+      chat.messages = [{ text: this.INITIAL_MESSAGE, isUser: false }];
+      this.saveChats();
+    }
+  }
+
+  private saveChats(): void {
+    this._localService.saveData('chats', JSON.stringify(this.chats));
+    this._localService.saveData('activeChat', this.activeChat);
   }
 
   private addCopyButtonsToCodeBlocks(): void {
@@ -151,80 +209,35 @@ export class MainChatComponent implements OnInit, OnChanges, AfterViewChecked {
       });
   }
 
-  private addInitialMessage(): void {
-    this.messages.push({ text: this.INITIAL_MESSAGE, isUser: false });
-    this.saveMessagesToLocalStorage();
-  }
-
-  // отправка запроса к API, принятие ответа
   public async sendMessage(): Promise<void> {
     const userMessage: string = this.userInput.trim();
-
     if (!userMessage) return;
 
-    // добавление сообщения юзера в массив messages
-    this.addUserMessage(userMessage);
+    const chat = this.chats.find(c => c.id === this.activeChat);
+    if (!chat) return;
+
+    chat.messages.push({ text: userMessage, isUser: true });
     this.userInput = '';
     this.isLoading = true;
     this.scrollToBottom();
+    this.saveChats();
 
     try {
-      const historyMessages: MistralChatMessage[] = [];
+      const aiResponse: string = await this._mistralApiService.sendMessage(chat.messages);
+      chat.messages.push({ text: aiResponse, isUser: false });
 
-      historyMessages.push({
-        role: 'system',
-        content: 'Ты - TestAI, дружелюбный и полезный ассистент. Всегда представляйся как TestAI, если тебя спросят, как тебя зовут.'
-      });
-
-      const recentMessages: Message[] = this.messages.slice();
-
-      recentMessages.forEach(msg => {
-        historyMessages.push({
-          role: msg.isUser ? 'user' : 'assistant',
-          content: msg.text
-        });
-      });
-
-      historyMessages.push({ role: 'user', content: userMessage });
-
-      // отправка запроса к API
-      const chatResponse: ChatCompletionResponse = await this.CLIENT.chat.complete({
-        model: this.MODEL,
-        messages: historyMessages
-      });
-
-      if (chatResponse && chatResponse.choices && chatResponse.choices.length > 0) {
-        const textToString: string = chatResponse.choices[0].message.content!.toString();
-        this.addAiMessage(textToString);
+      // заголовок чата
+      if (chat.messages.filter(m => m.isUser).length === 1) {
+        chat.title = userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage;
       }
     } catch (error) {
       console.error('Ошибка при получении ответа:', error);
-      this.addAiMessage('Извините, произошла ошибка при обработке вашего запроса.');
+      chat.messages.push({ text: 'Извините, произошла ошибка при обработке вашего запроса.', isUser: false });
     } finally {
       this.isLoading = false;
-      this.saveMessagesToLocalStorage();
+      this.saveChats();
       this.scrollToBottom();
     }
-  }
-
-  private addUserMessage(message: string): void {
-    this.messages.push({ text: message, isUser: true });
-    this.scrollToBottom();
-  }
-
-  private addAiMessage(message: string): void {
-    this.messages.push({ text: message, isUser: false });
-    this.scrollToBottom();
-  }
-
-  public clearChat(): void {
-    this.messages = [];
-    this.addInitialMessage();
-    this.saveMessagesToLocalStorage();
-  }
-
-  public saveMessagesToLocalStorage(): void {
-    this._localService.saveData(this.STORAGE_KEY, JSON.stringify(this.messages));
   }
 
   private scrollToBottom(): void {

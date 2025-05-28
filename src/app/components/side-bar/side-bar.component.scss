@@ -1,0 +1,81 @@
+@use "../../common/style" as *;
+
+.sidebar-container {
+  width: 300px;
+  height: 98vh;
+  background-color: $dark-color;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 20px 0 20px;
+  transition: 0.4s ease-out;
+  overflow: hidden;
+  position: relative;
+
+  &.closed {
+    width: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .close-button {
+    @include ui-button;
+    position: fixed;
+    top: 20px;
+  }
+
+  .new-chat-btn {
+    @include ui-button;
+    min-width: 150px;
+    align-self: end;
+    margin-bottom: 20px;
+    margin-top: 40px;
+  }
+
+  .chats-list {
+    @include scrollbar;
+    padding-right: 10px;
+    overflow-y: auto;
+    min-width: 280px;
+
+    .chat-item {
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: $light-color;
+
+      &.active {
+        background-color: $button-and-messages-color;
+        color: $light-color;
+      }
+
+      .delete-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        color: darken($light-color, 40%);
+
+        &:hover {
+          color: $delete-chat-hover-color;
+        }
+      }
+    }
+  }
+}
+
+.open-sidebar-btn {
+  @include ui-button;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+}
+
+.sidebar-container.open + .open-sidebar-btn {
+  transition: opacity 0.1s;
+  opacity: 0;
+  pointer-events: none;
+}

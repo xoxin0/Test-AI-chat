@@ -4,6 +4,7 @@ $light-color: #f1f1f1;
 $border-color: #6868de;
 $dark-color: #01011f;
 $button-and-messages-color: #007bff;
+$delete-chat-hover-color: #f44336;
 
 @mixin ui-button {
   transition: 0.4s;
@@ -19,4 +20,9 @@ $button-and-messages-color: #007bff;
     background-color: $dark-color;
     transform: scale(1.05);
   }
+}
+
+@mixin scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: $button-and-messages-color $background-color;
 }
