@@ -1,8 +1,22 @@
-<div class="sidebar">
+<div
+  class="sidebar-container"
+  [class.open]="isOpen"
+  [class.closed]="!isOpen"
+>
+  <button
+    class="close-button"
+    (click)="toCloseSidebar()"
+    *ngIf="isOpen"
+  >
+    <
+  </button>
+
   <button
     (click)="addChat.emit()"
     class="new-chat-btn"
-  >Новый чат</button>
+  >
+    Новый чат
+  </button>
 
   <div class="chats-list">
     <div
@@ -25,3 +39,10 @@
     </div>
   </div>
 </div>
+
+<button
+  class="open-sidebar-btn"
+  (click)="openSidebar()"
+>
+  >
+</button>

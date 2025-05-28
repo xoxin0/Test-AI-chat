@@ -21,3 +21,8 @@ $delete-chat-hover-color: #f44336;
     transform: scale(1.05);
   }
 }
+
+@mixin scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: $button-and-messages-color $background-color;
+}

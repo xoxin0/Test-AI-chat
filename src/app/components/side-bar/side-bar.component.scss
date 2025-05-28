@@ -1,23 +1,41 @@
 @use "../../common/style" as *;
 
-.sidebar {
-  width: 100%;
+.sidebar-container {
+  width: 300px;
   height: 98vh;
   background-color: $dark-color;
   display: flex;
   flex-direction: column;
   padding: 20px 20px 0 20px;
+  transition: 0.4s ease-out;
+  overflow: hidden;
+  position: relative;
+
+  &.closed {
+    width: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .close-button {
+    @include ui-button;
+    position: fixed;
+    top: 20px;
+  }
 
   .new-chat-btn {
     @include ui-button;
-    width: 50%;
+    min-width: 150px;
     align-self: end;
     margin-bottom: 20px;
+    margin-top: 40px;
   }
 
   .chats-list {
-    flex: 1;
+    @include scrollbar;
+    padding-right: 10px;
     overflow-y: auto;
+    min-width: 280px;
 
     .chat-item {
       padding: 10px;
@@ -47,4 +65,17 @@
       }
     }
   }
+}
+
+.open-sidebar-btn {
+  @include ui-button;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+}
+
+.sidebar-container.open + .open-sidebar-btn {
+  transition: opacity 0.1s;
+  opacity: 0;
+  pointer-events: none;
 }

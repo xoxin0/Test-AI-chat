@@ -4,7 +4,7 @@ import {
   inject,
   OnInit,
   ViewChild,
-  AfterViewChecked
+  AfterViewChecked, AfterViewInit
 } from '@angular/core';
 
 import {
@@ -24,7 +24,7 @@ import { Message } from '../../interfaces/message';
 import { ChatCompletionResponse } from '@mistralai/mistralai/models/components';
 import { SideBarComponent } from '../side-bar/side-bar.component';
 import { Chat } from '../../interfaces/chat';
-import {FocusInputService} from '../../services/focus-input.service';
+import { FocusInputService } from '../../services/focus-input.service';
 
 @Component({
   selector: 'app-main-chat',
@@ -55,6 +55,7 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
   public activeChat: string = '';
   public userInput: string = '';
   public isLoading: boolean = false;
+  public sidebarIsOpen: boolean = true;
 
   get messages(): Message[] {
     const chat = this.chats.find(c => c.id === this.activeChat);
@@ -63,11 +64,11 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
 
   ngOnInit(): void {
     this.loadChats();
+    this._focusInputService.focusInput();
   }
 
   ngAfterViewChecked(): void {
     this.addCopyButtonsToCodeBlocks();
-    this._focusInputService.focusInput();
   }
 
   private loadChats(): void {
@@ -93,19 +94,21 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
   public addNewChat(): void {
     const newChat: Chat = {
       id: Date.now().toString(),
-      title: `Чат ${this.chats.length + 1}`,
+      title: `Новый чат`,
       messages: [{ text: this.INITIAL_MESSAGE, isUser: false }]
     };
 
     this.chats.push(newChat);
     this.activeChat = newChat.id;
     this.saveChats();
+    this._focusInputService.focusInput();
   }
 
   public onSelectChat(chatId: string): void {
     this.activeChat = chatId;
     this._localService.saveData('activeChat', chatId);
-    setTimeout(() => this.scrollToBottom(), 0);
+    this.scrollToBottom();
+    this._focusInputService.focusInput();
   }
 
   public onRemoveChat(chatId: string): void {
@@ -124,6 +127,10 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
     }
 
     this.saveChats();
+  }
+
+  public onCloseSidebar(isOpen: boolean): void {
+    this.sidebarIsOpen = isOpen;
   }
 
   public clearChat(): void {
