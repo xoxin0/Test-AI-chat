@@ -4,7 +4,7 @@ import {
   inject,
   OnInit,
   ViewChild,
-  AfterViewChecked, AfterViewInit
+  AfterViewChecked
 } from '@angular/core';
 
 import {
@@ -15,13 +15,10 @@ import {
 
 import { MarkdownModule } from 'ngx-markdown';
 import { FormsModule } from '@angular/forms';
-import { Mistral } from '@mistralai/mistralai';
-import { API_KEY } from '../../../API_KEY';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { ClipboardService } from '../../services/clipboard.service';
-import { MistralChatMessage } from '../../interfaces/mistral-chat-message';
+import { MistralApiService } from '../../services/mistral-api.service';
 import { Message } from '../../interfaces/message';
-import { ChatCompletionResponse } from '@mistralai/mistralai/models/components';
 import { SideBarComponent } from '../side-bar/side-bar.component';
 import { Chat } from '../../interfaces/chat';
 import { FocusInputService } from '../../services/focus-input.service';
@@ -41,12 +38,10 @@ import { FocusInputService } from '../../services/focus-input.service';
 })
 
 export class MainChatComponent implements OnInit, AfterViewChecked {
-  private readonly API_KEY: string = API_KEY.MISTRAL_API_KEY;
-  private readonly CLIENT: Mistral = new Mistral({ apiKey: this.API_KEY });
   private readonly _localService: LocalStorageService = inject(LocalStorageService);
   private readonly _clipboardService: ClipboardService = inject(ClipboardService);
   private readonly _focusInputService: FocusInputService = inject(FocusInputService);
-  private readonly MODEL: string = 'mistral-large-latest';
+  private readonly _mistralApiService: MistralApiService = inject(MistralApiService);
   private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
 
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
@@ -228,33 +223,12 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
     this.saveChats();
 
     try {
-      const historyMessages: MistralChatMessage[] = [];
+      const aiResponse: string = await this._mistralApiService.sendMessage(chat.messages);
+      chat.messages.push({ text: aiResponse, isUser: false });
 
-      historyMessages.push({
-        role: 'system',
-        content: 'Ты - TestAI, дружелюбный и полезный ассистент. Всегда представляйся как TestAI, если тебя спросят, как тебя зовут.'
-      });
-
-      chat.messages.forEach(msg => {
-        historyMessages.push({
-          role: msg.isUser ? 'user' : 'assistant',
-          content: msg.text
-        });
-      });
-
-      const chatResponse: ChatCompletionResponse = await this.CLIENT.chat.complete({
-        model: this.MODEL,
-        messages: historyMessages
-      });
-
-      if (chatResponse && chatResponse.choices && chatResponse.choices.length > 0) {
-        const aiResponse: string = chatResponse.choices[0].message.content!.toString();
-        chat.messages.push({ text: aiResponse, isUser: false });
-
-        // заголовок чата
-        if (chat.messages.filter(m => m.isUser).length === 1) {
-          chat.title = userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage;
-        }
+      // заголовок чата
+      if (chat.messages.filter(m => m.isUser).length === 1) {
+        chat.title = userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage;
       }
     } catch (error) {
       console.error('Ошибка при получении ответа:', error);
