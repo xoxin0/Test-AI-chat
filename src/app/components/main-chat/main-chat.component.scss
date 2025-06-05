@@ -148,23 +148,11 @@
       gap: 10px;
 
       .input-message {
-        color: $light-color;
-        background-color: $background-color;
+        @include ui-input;
         flex: 1;
-        padding: 8px;
-        border: none;
-        border-radius: 4px;
-        transition: outline 0.2s ease;
-
-        &:focus {
-          outline: $dark-color 2px solid;
-          border: none;
-          box-shadow: none;
-        }
 
         &:disabled {
           opacity: 0.7;
-          cursor: not-allowed;
         }
       }
 
@@ -173,7 +161,6 @@
         transition: background-color 0.2s ease, opacity 0.2s ease;
 
         &:disabled {
-          cursor: not-allowed;
           background-color: $button-and-messages-color;
           opacity: 0.7;
         }

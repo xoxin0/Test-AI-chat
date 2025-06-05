@@ -1,0 +1,5 @@
+@use "../../../common/style" as *;
+
+.form-container {
+  @include ui-form-container;
+}

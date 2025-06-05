@@ -3,8 +3,8 @@ import {
   inject
 } from '@angular/core';
 
-import { Router } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
+import { NavigateService } from '../../services/navigate.service';
 
 @Component({
   selector: 'app-welcome-menu',
@@ -15,9 +15,9 @@ import { NgOptimizedImage } from '@angular/common';
   styleUrl: './welcome-menu.component.scss'
 })
 export class WelcomeMenuComponent {
-  private _router = inject(Router);
+  private _navigateService = inject(NavigateService);
 
   public navigateToMainChat() {
-    this._router.navigate(['main-chat']);
+    this._navigateService.navigateToLogin();
   }
 }

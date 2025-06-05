@@ -1,0 +1,50 @@
+<div class="form-container">
+  <form
+    [formGroup]="loginForm"
+    class="form-login"
+  >
+
+    <div class="header-container">
+      <img
+        ngSrc="assets/logo-white.png"
+        alt="logo"
+        width="80"
+        height="31"
+        class="logo"
+        priority
+      >
+
+      <button class="button-go-register" (click)="goRegister()">Регистрация</button>
+    </div>
+
+    <h2>Вход</h2>
+
+    <div class="input-username-container">
+      <label for="input-username">Username:</label>
+      <input
+        placeholder="Введите имя пользователя"
+        formControlName="username"
+        id="input-username"
+        type="text"
+      >
+    </div>
+
+    <div class="input-password-container">
+      <label for="input-password">Password:</label>
+      <input
+        placeholder="Введите пароль"
+        formControlName="password"
+        id="input-password"
+        type="password"
+      >
+    </div>
+
+    <button
+      class="button-login"
+      [disabled]="!loginForm.valid"
+      (click)="onLogin()"
+    >
+      Войти
+    </button>
+  </form>
+</div>

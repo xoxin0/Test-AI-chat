@@ -23,6 +23,90 @@ $delete-chat-hover-color: #f44336;
 }
 
 @mixin scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: $button-and-messages-color $background-color;
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: $button-and-messages-color;
+    border-radius: 14px;
+  }
 }
+
+@mixin ui-input {
+  width: 100%;
+  color: $light-color;
+  background-color: $background-color;
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  transition: outline 0.2s ease;
+
+  &:focus {
+    outline: $dark-color 2px solid;
+    border: none;
+    box-shadow: none;
+  }
+}
+
+@mixin ui-form-container {
+  color: $light-color;
+  height: 100vh;
+  background-color: $background-color;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .header-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    border-bottom: 1px solid $border-color;
+
+    .button-go-register, .button-go-login {
+      @include ui-button;
+      align-self: end;
+      margin: 20px 70px 15px 0;
+    }
+
+    .logo {
+      margin: 20px 0 15px 70px;
+    }
+  }
+
+  .form-register, .form-login {
+    background-color: $background-chat-color;
+    width: 580px;
+    height: 480px;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+
+    .input-username-container, .input-password-container{
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+
+      #input-username, #input-password {
+        @include ui-input;
+      }
+    }
+  }
+
+  .button-login, .button-register {
+    margin: 0 0 50px 15px;
+    @include ui-button;
+
+    &:disabled {
+      opacity: 0.7;
+
+      &:hover {
+        background-color: $button-and-messages-color;
+        transform: none;
+      }
+    }
+  }
+}
+
