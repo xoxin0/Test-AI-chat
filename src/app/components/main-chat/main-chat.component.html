@@ -18,12 +18,7 @@
         class="logo"
       >
 
-      <button
-        (click)="clearChat()"
-        class="button-clear-chat"
-      >
-        Очистить
-      </button>
+      <p class="username">{{ currentUser?.username }}</p>
     </header>
 
     <div class="messages" #messagesContainer>

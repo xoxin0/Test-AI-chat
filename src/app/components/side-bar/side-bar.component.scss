@@ -11,24 +11,35 @@
   overflow: hidden;
   position: relative;
 
+  .header-container {
+    display: flex;
+    flex-direction: column;
+
+    .close-button {
+      @include ui-button;
+      align-self: start;
+    }
+
+    .logout-btn {
+      @include ui-button;
+      align-self: end;
+      position: absolute;
+      top: 22px;
+    }
+
+    .new-chat-btn {
+      @include ui-button;
+      min-width: 150px;
+      align-self: end;
+      margin-bottom: 20px;
+      margin-top: 40px;
+    }
+  }
+
   &.closed {
     width: 0;
     padding-left: 0;
     padding-right: 0;
-  }
-
-  .close-button {
-    @include ui-button;
-    position: fixed;
-    top: 20px;
-  }
-
-  .new-chat-btn {
-    @include ui-button;
-    min-width: 150px;
-    align-self: end;
-    margin-bottom: 20px;
-    margin-top: 40px;
   }
 
   .chats-list {

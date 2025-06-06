@@ -25,12 +25,11 @@
         margin: 20px 20px 20px 100px;
       }
 
-      .button-clear-chat {
-        @include ui-button;
+      .username {
+        color: $light-color;
         align-self: center;
-        width: 100px;
-        height: 34px;
         margin-right: 70px;
+        font-size: 20px;
       }
     }
 

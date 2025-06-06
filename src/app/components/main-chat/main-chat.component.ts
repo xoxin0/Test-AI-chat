@@ -52,7 +52,7 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
   public userInput: string = '';
   public isLoading: boolean = false;
   public sidebarIsOpen: boolean = true;
-  private currentUser: User | null = null;
+  public currentUser: User | null = null;
 
   get messages(): Message[] {
     const chat = this.chats.find(c => c.id === this.activeChat);
@@ -163,14 +163,6 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
 
   public onCloseSidebar(isOpen: boolean): void {
     this.sidebarIsOpen = isOpen;
-  }
-
-  public clearChat(): void {
-    const chat = this.chats.find(c => c.id === this.activeChat);
-    if (chat) {
-      chat.messages = [{ text: this.INITIAL_MESSAGE, isUser: false }];
-      this.saveChats();
-    }
   }
 
   private saveChats(): void {
