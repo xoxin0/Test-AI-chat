@@ -22,6 +22,7 @@ import { Message } from '../../interfaces/message';
 import { SideBarComponent } from '../side-bar/side-bar.component';
 import { Chat } from '../../interfaces/chat';
 import { FocusInputService } from '../../services/focus-input.service';
+import { User } from '../../interfaces/user';
 
 @Component({
   selector: 'app-main-chat',
@@ -51,6 +52,7 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
   public userInput: string = '';
   public isLoading: boolean = false;
   public sidebarIsOpen: boolean = true;
+  private currentUser: User | null = null;
 
   get messages(): Message[] {
     const chat = this.chats.find(c => c.id === this.activeChat);
@@ -58,6 +60,7 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
   }
 
   ngOnInit(): void {
+    this.loadCurrentUser();
     this.loadChats();
     this._focusInputService.focusInput();
   }
@@ -66,17 +69,28 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
     this.addCopyButtonsToCodeBlocks();
   }
 
-  private loadChats(): void {
-    const savedChats = this._localService.getData('chats');
-    if (savedChats) {
-      this.chats = JSON.parse(savedChats);
+  private loadCurrentUser(): void {
+    const savedUser = this._localService.getData('currentUser');
+    if (savedUser) {
+      this.currentUser = JSON.parse(savedUser);
+    }
+  }
 
-      const activeChat = this._localService.getData('activeChat');
-      if (activeChat && this.chats.some(c => c.id === activeChat)) {
-        this.activeChat = activeChat;
-      } else {
-        this.activeChat = this.chats[0]?.id || '';
+  private loadChats(): void {
+    if (this.currentUser && this.currentUser.chats) {
+      this.chats = this.currentUser.chats;
+    } else {
+      const savedChats = this._localService.getData('chats');
+      if (savedChats) {
+        this.chats = JSON.parse(savedChats);
       }
+    }
+
+    const activeChat = this._localService.getData('activeChat');
+    if (activeChat && this.chats.some(c => c.id === activeChat)) {
+      this.activeChat = activeChat;
+    } else {
+      this.activeChat = this.chats[0]?.id || '';
     }
 
     if (this.chats.length === 0) {
@@ -84,6 +98,27 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
     }
 
     setTimeout(() => this.scrollToBottom(), 0);
+  }
+
+  private saveChatsToUser(): void {
+    if (this.currentUser) {
+      this.currentUser.chats = this.chats;
+
+      const savedUsers = this._localService.getData('users');
+      if (savedUsers) {
+        const allUsers: User[] = JSON.parse(savedUsers);
+
+        const userIndex = allUsers.findIndex(user => user.username === this.currentUser!.username);
+        if (userIndex !== -1) {
+          allUsers[userIndex] = this.currentUser;
+
+          this._localService.saveData('users', JSON.stringify(allUsers));
+          this._localService.saveData('currentUser', JSON.stringify(this.currentUser));
+        }
+      }
+    }
+
+    this._localService.saveData('chats', JSON.stringify(this.chats));
   }
 
   public addNewChat(): void {
@@ -95,8 +130,10 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
 
     this.chats.push(newChat);
     this.activeChat = newChat.id;
-    this.saveChats();
-    this._focusInputService.focusInput();
+    this.saveChatsToUser();
+    this._localService.saveData('activeChat', this.activeChat);
+    setTimeout(() => this.scrollToBottom(), 0);
+    setTimeout(() => this._focusInputService.focusInput(), 0);
   }
 
   public onSelectChat(chatId: string): void {
@@ -210,33 +247,39 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
   }
 
   public async sendMessage(): Promise<void> {
-    const userMessage: string = this.userInput.trim();
-    if (!userMessage) return;
+    if (!this.userInput.trim() || this.isLoading) return;
 
-    const chat = this.chats.find(c => c.id === this.activeChat);
-    if (!chat) return;
-
-    chat.messages.push({ text: userMessage, isUser: true });
+    const userMessage = this.userInput.trim();
     this.userInput = '';
+
+    const currentChat = this.chats.find(c => c.id === this.activeChat);
+    if (!currentChat) return;
+
+    currentChat.messages.push({ text: userMessage, isUser: true });
+
+    if (currentChat.title === 'Новый чат' && userMessage.length > 0) {
+      currentChat.title = userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage;
+    }
+
+    this.saveChatsToUser();
+    setTimeout(() => this.scrollToBottom(), 0);
+
     this.isLoading = true;
-    this.scrollToBottom();
-    this.saveChats();
 
     try {
-      const aiResponse: string = await this._mistralApiService.sendMessage(chat.messages);
-      chat.messages.push({ text: aiResponse, isUser: false });
-
-      // заголовок чата
-      if (chat.messages.filter(m => m.isUser).length === 1) {
-        chat.title = userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage;
-      }
+      const response = await this._mistralApiService.getAPIResponse(currentChat.messages);
+      currentChat.messages.push({ text: response, isUser: false });
+      this.saveChatsToUser();
     } catch (error) {
-      console.error('Ошибка при получении ответа:', error);
-      chat.messages.push({ text: 'Извините, произошла ошибка при обработке вашего запроса.', isUser: false });
+      console.error('Ошибка при отправке сообщения:', error);
+      currentChat.messages.push({
+        text: 'Извините, произошла ошибка при получении ответа. Попробуйте еще раз.',
+        isUser: false
+      });
+      this.saveChatsToUser();
     } finally {
       this.isLoading = false;
-      this.saveChats();
-      this.scrollToBottom();
+      setTimeout(() => this.scrollToBottom(), 0);
     }
   }
 

@@ -14,7 +14,7 @@ export class MistralApiService {
   private readonly CLIENT: Mistral = new Mistral({ apiKey: this.API_KEY });
   private readonly MODEL: string = 'mistral-large-latest';
 
-  public async sendMessage(messages: Message[]): Promise<string> {
+  public async getAPIResponse(messages: Message[]): Promise<string> {
     try {
       const historyMessages: MistralChatMessage[] = [];
 
