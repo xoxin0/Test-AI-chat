@@ -13,7 +13,6 @@
 
   .header-container {
     display: flex;
-    flex-direction: column;
 
     .close-button {
       @include ui-button;
@@ -23,8 +22,8 @@
     .new-chat-btn {
       @include ui-button;
       min-width: 150px;
-      align-self: end;
-      margin-bottom: 20px;
+      align-self: start;
+      margin: 50px 0 20px auto;
     }
   }
 
