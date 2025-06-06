@@ -29,7 +29,14 @@ cd Test-AI-chat
 npm install
 ```
 
-4. Создайте файл в папке `src` API.KEY.ts и добавьте в него ключ Mistal API (предварительно получив его).
+4. Создайте файл в папке `src` - `API.KEY.ts` и добавьте в него ключ Mistal API (предварительно получив его).
+```ts
+export const API_KEY = {
+  MISTRAL_API_KEY: 'ваш ключ'
+};
+```
+
+5. Для очистки `localSorage` введите метод `clearAll()` из `local-storage.service.ts` в любое место в коде.
 
 ## Запуск проекта
 
