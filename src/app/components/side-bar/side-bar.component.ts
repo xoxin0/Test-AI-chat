@@ -1,13 +1,12 @@
 import {
   Component,
-  EventEmitter, inject,
+  EventEmitter,
   Input,
   Output
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 import { Chat } from '../../interfaces/chat';
-import {AuthService} from '../../services/auth.service';
 
 @Component({
   selector: 'app-side-bar',
@@ -17,8 +16,6 @@ import {AuthService} from '../../services/auth.service';
 })
 
 export class SideBarComponent {
-  private _authService = inject(AuthService);
-
   @Input() chats: Chat[] = [];
   @Input() activeChat: string = '';
   @Input() isOpen: boolean = true;
@@ -39,9 +36,5 @@ export class SideBarComponent {
       this.isOpen = false;
       this.closeSidebar.emit(this.isOpen);
     }
-  }
-
-  public toLogout(): void {
-    this._authService.logout();
   }
 }

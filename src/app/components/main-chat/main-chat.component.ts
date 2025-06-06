@@ -23,6 +23,7 @@ import { SideBarComponent } from '../side-bar/side-bar.component';
 import { Chat } from '../../interfaces/chat';
 import { FocusInputService } from '../../services/focus-input.service';
 import { User } from '../../interfaces/user';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-main-chat',
@@ -43,6 +44,7 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
   private readonly _clipboardService: ClipboardService = inject(ClipboardService);
   private readonly _focusInputService: FocusInputService = inject(FocusInputService);
   private readonly _mistralApiService: MistralApiService = inject(MistralApiService);
+  private readonly _authService: AuthService = inject(AuthService);
   private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
 
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
@@ -286,5 +288,9 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
     } catch (err) {
       console.error('Ошибка при прокрутке сообщений:', err);
     }
+  }
+
+  public toLogout(): void {
+    this._authService.logout();
   }
 }

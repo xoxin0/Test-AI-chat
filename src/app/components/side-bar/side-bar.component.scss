@@ -20,19 +20,11 @@
       align-self: start;
     }
 
-    .logout-btn {
-      @include ui-button;
-      align-self: end;
-      position: absolute;
-      top: 22px;
-    }
-
     .new-chat-btn {
       @include ui-button;
       min-width: 150px;
       align-self: end;
       margin-bottom: 20px;
-      margin-top: 40px;
     }
   }
 

@@ -18,7 +18,22 @@
         class="logo"
       >
 
-      <p class="username">{{ currentUser?.username }}</p>
+      <div class="user-info">
+        <p class="username">{{ currentUser?.username }}</p>
+
+        <button
+          class="logout-btn"
+          (click)="toLogout()"
+        >
+          <img
+            ngSrc="assets/icon-logout.svg"
+            alt="выйти"
+            width="20"
+            height="20"
+          >
+        </button>
+
+      </div>
     </header>
 
     <div class="messages" #messagesContainer>
