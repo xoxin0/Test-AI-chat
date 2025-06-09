@@ -93,6 +93,15 @@
             background-color: $background-color;
             padding: 10px 15px;
             border-radius: 0 0 10px 10px;
+
+            code {
+              background-color: $background-color;
+            }
+          }
+
+          .language-undefined, .language-arcade {
+            background-color: $background-color;
+            border-radius: 5px;
           }
 
           .copy-button {

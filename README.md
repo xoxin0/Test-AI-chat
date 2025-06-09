@@ -36,7 +36,7 @@ export const API_KEY = {
 };
 ```
 
-5. Для очистки `localSorage` введите метод `clearAll()` из `local-storage.service.ts` в любое место в коде.
+5. Для очистки `localSorage` введите метод `clearAll()` из `local-storage.service.ts` в любое место в коде (не забудьте потом удалить метод).
 
 ## Запуск проекта
 

@@ -24,6 +24,7 @@ import { Chat } from '../../interfaces/chat';
 import { FocusInputService } from '../../services/focus-input.service';
 import { User } from '../../interfaces/user';
 import { AuthService } from '../../services/auth.service';
+import hljs from 'highlight.js';
 
 @Component({
   selector: 'app-main-chat',
@@ -68,7 +69,32 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
   }
 
   ngAfterViewChecked(): void {
+    this.highlightCodeBlocks();
     this.addCopyButtonsToCodeBlocks();
+  }
+
+  private highlightCodeBlocks(): void {
+    const codeBlocks: NodeListOf<HTMLElement> = document.querySelectorAll('pre code:not(.hljs)');
+
+    codeBlocks.forEach((block: HTMLElement) => {
+      try {
+        hljs.highlightElement(block);
+      } catch (error) {
+        console.debug('Ошибка при подсветке кода:', error);
+      }
+    });
+
+    const inlineCodeBlocks: NodeListOf<HTMLElement> = document.querySelectorAll('code:not(pre code):not(.hljs)');
+
+    inlineCodeBlocks.forEach((block: HTMLElement) => {
+      try {
+        if (block.textContent && block.textContent.length > 2) {
+          hljs.highlightElement(block);
+        }
+      } catch (error) {
+        console.debug('Ошибка при подсветке инлайн кода:', error);
+      }
+    });
   }
 
   private loadCurrentUser(): void {
@@ -185,16 +211,7 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
       const headerContainer: HTMLDivElement = document.createElement('div');
       headerContainer.className = 'code-header';
 
-      let language = 'code';
-      const codeElement: HTMLElement | null = codeBlock.querySelector('code');
-      if (codeElement) {
-        const classes: string[] = [...codeElement.classList];
-        const languageClass: string | undefined = classes.find(cls => cls.startsWith('language-'));
-
-        if (languageClass) {
-          language = languageClass.replace('language-', '');
-        }
-      }
+      const language: string = this.getLanguageFromCodeBlock(codeBlock);
 
       const languageLabel: HTMLSpanElement = document.createElement('span');
       languageLabel.className = 'language-label';
@@ -212,6 +229,25 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
 
       codeBlock.classList.add('copy-button-added');
     });
+  }
+
+  private getLanguageFromCodeBlock(codeBlock: Element): string {
+    const codeElement = codeBlock.querySelector('code');
+    if (!codeElement) return 'code';
+
+    const className = codeElement.className;
+
+    if (className.includes('language-')) {
+      return className.split('language-')[1]
+        .split(' ')[0];
+    }
+
+    if (className.includes('hljs')) {
+      const match: RegExpMatchArray | null = className.match(/hljs-(\w+)/);
+      return match ? match[1] : 'code';
+    }
+
+    return 'code';
   }
 
   private copyCodeContent(codeBlock: Element, button: HTMLButtonElement): void {
