@@ -3,3 +3,9 @@
 .form-container {
   @include ui-form-container;
 }
+
+.error-message {
+  color: red;
+  margin-left: 5px;
+  font-size: 12px;
+}

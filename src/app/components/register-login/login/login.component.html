@@ -31,7 +31,16 @@
         formControlName="username"
         id="input-username"
         type="text"
+      />
+      <div
+        *ngIf="loginForm.get('username')?.invalid &&
+        loginForm.get('username')?.touched"
+        class="error-message"
       >
+        <span *ngIf="loginForm.get('username')?.errors?.['required']">Имя пользователя обязательно</span>
+        <span *ngIf="loginForm.get('username')?.errors?.['minlength']">Минимум 3 символа</span>
+        <span *ngIf="loginForm.get('username')?.errors?.['maxlength']">Максимум 16 символов</span>
+      </div>
     </div>
 
     <div class="input-password-container">
@@ -41,8 +50,16 @@
         formControlName="password"
         id="input-password"
         type="password"
-        (keydown.enter)="onLogin()"
+      />
+
+      <div
+        *ngIf="loginForm.get('password')?.invalid &&
+        loginForm.get('password')?.touched"
+        class="error-message"
       >
+        <span *ngIf="loginForm.get('password')?.errors?.['required']">Пароль обязателен</span>
+        <span *ngIf="loginForm.get('password')?.errors?.['minlength']">Минимум 6 символов</span>
+      </div>
     </div>
 
     <button

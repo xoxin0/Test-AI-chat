@@ -11,7 +11,7 @@ import {
   Validators
 } from '@angular/forms';
 
-import { NgOptimizedImage } from '@angular/common';
+import {NgIf, NgOptimizedImage} from '@angular/common';
 import { NavigateService } from '../../../services/navigate.service';
 import {User} from '../../../interfaces/user';
 import {LocalStorageService} from '../../../services/local-storage.service';
@@ -21,7 +21,8 @@ import { AuthService } from '../../../services/auth.service';
   selector: 'app-register',
   imports: [
     NgOptimizedImage,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    NgIf
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
