@@ -38,7 +38,7 @@
         class="error-message"
       >
         <span *ngIf="loginForm.get('username')?.errors?.['required']">Имя пользователя обязательно</span>
-        <span *ngIf="loginForm.get('username')?.errors?.['minlength']">Минимум 3 символа</span>
+        <span *ngIf="loginForm.get('username')?.errors?.['minlength']">Минимум 4 символа</span>
         <span *ngIf="loginForm.get('username')?.errors?.['maxlength']">Максимум 16 символов</span>
       </div>
     </div>
