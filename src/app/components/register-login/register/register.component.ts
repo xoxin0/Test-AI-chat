@@ -11,11 +11,16 @@ import {
   Validators
 } from '@angular/forms';
 
-import {NgIf, NgOptimizedImage} from '@angular/common';
+import {
+  NgIf,
+  NgOptimizedImage
+} from '@angular/common';
+
 import { NavigateService } from '../../../services/navigate.service';
-import {User} from '../../../interfaces/user';
-import {LocalStorageService} from '../../../services/local-storage.service';
+import { User } from '../../../interfaces/user';
+import { LocalStorageService } from '../../../services/local-storage.service';
 import { AuthService } from '../../../services/auth.service';
+import { TuiAlertService } from '@taiga-ui/core';
 
 @Component({
   selector: 'app-register',
@@ -29,17 +34,18 @@ import { AuthService } from '../../../services/auth.service';
 })
 
 export class RegisterComponent implements OnInit {
-  private _navigateService = inject(NavigateService);
-  private _localStorageService = inject(LocalStorageService);
-  private _authService = inject(AuthService);
-  private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
-
   public registerForm = new FormGroup({
     username: new FormControl<string>('', { nonNullable: true, validators: [Validators.required, Validators.minLength(4), Validators.maxLength(16)] }),
     password: new FormControl<string>('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] })
   });
 
-  ngOnInit(): void {
+  private _navigateService = inject(NavigateService);
+  private _localStorageService = inject(LocalStorageService);
+  private _authService = inject(AuthService);
+  private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
+  private readonly _alerts = inject(TuiAlertService);
+
+  public ngOnInit(): void {
     if (this._authService.isAuthenticated()) {
       this._navigateService.navigateToMainChat();
     }
@@ -47,7 +53,7 @@ export class RegisterComponent implements OnInit {
 
   public onRegister(): void {
     if (this.registerForm.invalid) {
-      alert('Пожалуйста, заполните все поля корректно');
+      this.showErrorFormNotification();
       return;
     }
 
@@ -57,7 +63,7 @@ export class RegisterComponent implements OnInit {
     const userExists = allUsers.some(user => user.username === this.registerForm.value.username!);
 
     if (userExists) {
-      alert('Пользователь с таким именем уже существует');
+      this.showErrorDataNotification();
       return;
     }
 
@@ -79,7 +85,6 @@ export class RegisterComponent implements OnInit {
 
     this._authService.login(newUser);
 
-    alert('Регистрация прошла успешно!');
     this.goMainChat();
   }
 
@@ -89,5 +94,17 @@ export class RegisterComponent implements OnInit {
 
   public goMainChat(): void {
     this._navigateService.navigateToMainChat();
+  }
+
+  private showErrorDataNotification(): void {
+    this._alerts
+      .open('<strong>Пользователь уже существует</strong>', {label: 'Ошибка'})
+      .subscribe();
+  }
+
+  private showErrorFormNotification(): void {
+    this._alerts
+      .open('<strong>Пожалуйста, заполните все поля корректно</strong>', {label: 'Ошибка'})
+      .subscribe();
   }
 }

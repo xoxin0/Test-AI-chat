@@ -1,12 +1,6 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideMarkdown } from 'ngx-markdown';
 import { AppComponent } from './app/app.component';
-import { provideRouter } from '@angular/router';
-import { routes } from './app/app.routes';
+import { appConfig } from './app/app.config';
 
-bootstrapApplication(AppComponent, {
-  providers: [
-    provideMarkdown(),
-    provideRouter(routes)
-  ]
-})
+bootstrapApplication(AppComponent, appConfig)
+  .then(r => console.debug(r))

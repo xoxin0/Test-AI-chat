@@ -11,11 +11,16 @@ import {
   Validators
 } from '@angular/forms';
 
-import {NgIf, NgOptimizedImage} from '@angular/common';
+import {
+  NgIf,
+  NgOptimizedImage
+} from '@angular/common';
+
 import { NavigateService } from '../../../services/navigate.service';
 import { User } from '../../../interfaces/user';
 import { LocalStorageService } from '../../../services/local-storage.service';
 import { AuthService } from '../../../services/auth.service';
+import { TuiAlertService } from '@taiga-ui/core';
 
 @Component({
   selector: 'app-login',
@@ -29,16 +34,17 @@ import { AuthService } from '../../../services/auth.service';
 })
 
 export class LoginComponent implements OnInit {
-  private _navigateService = inject(NavigateService);
-  private _localStorageService = inject(LocalStorageService);
-  private _authService = inject(AuthService);
-
   public loginForm = new FormGroup({
     username: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(4), Validators.maxLength(16)] }),
     password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] })
   });
 
-  ngOnInit(): void {
+  private _navigateService = inject(NavigateService);
+  private _localStorageService = inject(LocalStorageService);
+  private _authService = inject(AuthService);
+  private readonly _alerts = inject(TuiAlertService);
+
+  public ngOnInit(): void {
     if (this._authService.isAuthenticated()) {
       this._navigateService.navigateToMainChat();
     }
@@ -54,7 +60,7 @@ export class LoginComponent implements OnInit {
 
   public onLogin(): void {
     if (this.loginForm.invalid) {
-      alert('Пожалуйста, заполните все поля корректно');
+      this.showErrorFormNotification()
       return;
     }
 
@@ -63,12 +69,7 @@ export class LoginComponent implements OnInit {
       password: this.loginForm.value.password!
     };
 
-    const savedUsers = this._localStorageService.getData('users');
-
-    if (!savedUsers) {
-      alert('Пользователь не найден. Пожалуйста, зарегистрируйтесь');
-      return;
-    }
+    const savedUsers: string = this._localStorageService.getData('users')!;
 
     const allUsers: User[] = JSON.parse(savedUsers);
 
@@ -77,13 +78,24 @@ export class LoginComponent implements OnInit {
     );
 
     if (!user) {
-      alert('Неверное имя пользователя или пароль');
+      this.showErrorDataNotification();
       return;
     }
 
     this._authService.login(user);
 
-    alert(`Добро пожаловать, ${user.username}!`);
     this.goMainChat();
+  }
+
+  private showErrorDataNotification(): void {
+    this._alerts
+      .open('<strong>Неверное имя пользователя или пароль</strong>', {label: 'Ошибка'})
+      .subscribe();
+  }
+
+  private showErrorFormNotification(): void {
+    this._alerts
+      .open('<strong>Некорректные данные</strong>', {label: 'Ошибка'})
+      .subscribe();
   }
 }

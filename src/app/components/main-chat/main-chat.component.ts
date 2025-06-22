@@ -41,6 +41,13 @@ import hljs from 'highlight.js';
 })
 
 export class MainChatComponent implements OnInit, AfterViewChecked {
+  public chats: Chat[] = [];
+  public activeChat: string = '';
+  public userInput: string = '';
+  public isLoading: boolean = false;
+  public sidebarIsOpen: boolean = true;
+  public currentUser: User | null = null;
+
   private readonly _localService: LocalStorageService = inject(LocalStorageService);
   private readonly _clipboardService: ClipboardService = inject(ClipboardService);
   private readonly _focusInputService: FocusInputService = inject(FocusInputService);
@@ -50,25 +57,18 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
 
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
 
-  public chats: Chat[] = [];
-  public activeChat: string = '';
-  public userInput: string = '';
-  public isLoading: boolean = false;
-  public sidebarIsOpen: boolean = true;
-  public currentUser: User | null = null;
-
   get messages(): Message[] {
     const chat = this.chats.find(c => c.id === this.activeChat);
     return chat ? chat.messages : [];
   }
 
-  ngOnInit(): void {
+  public ngOnInit(): void {
     this.loadCurrentUser();
     this.loadChats();
     this._focusInputService.focusInput();
   }
 
-  ngAfterViewChecked(): void {
+  public ngAfterViewChecked(): void {
     this.highlightCodeBlocks();
     this.addCopyButtonsToCodeBlocks();
   }

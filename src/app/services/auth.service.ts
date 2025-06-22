@@ -1,4 +1,8 @@
-import { Injectable, inject } from '@angular/core';
+import {
+  Injectable,
+  inject
+} from '@angular/core';
+
 import { LocalStorageService } from './local-storage.service';
 import { NavigateService } from './navigate.service';
 import { User } from '../interfaces/user';
@@ -6,6 +10,7 @@ import { User } from '../interfaces/user';
 @Injectable({
   providedIn: 'root'
 })
+
 export class AuthService {
   private _localStorageService = inject(LocalStorageService);
   private _navigateService = inject(NavigateService);

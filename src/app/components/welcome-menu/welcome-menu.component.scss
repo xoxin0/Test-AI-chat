@@ -36,6 +36,7 @@
   color: $light-color;
   white-space: nowrap;
   cursor: default;
+  padding: 50px;
 
   &::after {
     content: "";

@@ -10,6 +10,7 @@
   transition: 0.4s ease-out;
   overflow: hidden;
   position: relative;
+  font-size: 16px;
 
   .header-container {
     display: flex;
@@ -48,6 +49,7 @@
       justify-content: space-between;
       align-items: center;
       background-color: $light-color;
+      font-size: 14px;
 
       &.active {
         background-color: $button-and-messages-color;
