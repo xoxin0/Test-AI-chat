@@ -8,6 +8,7 @@ import { routes } from './app.routes';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideMarkdown } from 'ngx-markdown';
 import { provideEventPlugins } from '@taiga-ui/event-plugins';
+import { provideHttpClient } from '@angular/common/http';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -17,6 +18,7 @@ export const appConfig: ApplicationConfig = {
     provideMarkdown(),
     provideRouter(routes),
     provideEventPlugins(),
-    provideEventPlugins()
+    provideEventPlugins(),
+    provideHttpClient(),
   ]
 };

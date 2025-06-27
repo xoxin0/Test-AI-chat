@@ -4,7 +4,8 @@ import {
   inject,
   OnInit,
   ViewChild,
-  AfterViewChecked
+  AfterViewChecked,
+  OnDestroy
 } from '@angular/core';
 
 import {
@@ -12,6 +13,11 @@ import {
   NgIf,
   NgOptimizedImage
 } from '@angular/common';
+
+import {
+  Subject,
+  takeUntil
+} from 'rxjs';
 
 import { MarkdownModule } from 'ngx-markdown';
 import { FormsModule } from '@angular/forms';
@@ -24,6 +30,8 @@ import { Chat } from '../../interfaces/chat';
 import { FocusInputService } from '../../services/focus-input.service';
 import { User } from '../../interfaces/user';
 import { AuthService } from '../../services/auth.service';
+import { UsersApiService } from '../../services/users-api.service';
+import { TuiAlertService } from '@taiga-ui/core';
 import hljs from 'highlight.js';
 
 @Component({
@@ -40,7 +48,7 @@ import hljs from 'highlight.js';
   styleUrls: ['./main-chat.component.scss']
 })
 
-export class MainChatComponent implements OnInit, AfterViewChecked {
+export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   public chats: Chat[] = [];
   public activeChat: string = '';
   public userInput: string = '';
@@ -48,23 +56,27 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
   public sidebarIsOpen: boolean = true;
   public currentUser: User | null = null;
 
+  private _allUsers: User[] = [];
   private readonly _localService: LocalStorageService = inject(LocalStorageService);
   private readonly _clipboardService: ClipboardService = inject(ClipboardService);
   private readonly _focusInputService: FocusInputService = inject(FocusInputService);
   private readonly _mistralApiService: MistralApiService = inject(MistralApiService);
   private readonly _authService: AuthService = inject(AuthService);
+  private readonly _usersApiService: UsersApiService = inject(UsersApiService);
+  private readonly _alerts: TuiAlertService = inject(TuiAlertService);
+  private readonly _destroy$: any = new Subject<void>();
   private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
 
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
 
   get messages(): Message[] {
-    const chat = this.chats.find(c => c.id === this.activeChat);
+    const chat: Chat | undefined = this.chats.find(chat => chat.id === this.activeChat);
     return chat ? chat.messages : [];
   }
 
   public ngOnInit(): void {
     this.loadCurrentUser();
-    this.loadChats();
+    this.loadUsersAndChats();
     this._focusInputService.focusInput();
   }
 
@@ -73,48 +85,52 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
     this.addCopyButtonsToCodeBlocks();
   }
 
-  private highlightCodeBlocks(): void {
-    const codeBlocks: NodeListOf<HTMLElement> = document.querySelectorAll('pre code:not(.hljs)');
+  public ngOnDestroy(): void {
+    this._destroy$.next();
+    this._destroy$.complete();
+  }
 
-    codeBlocks.forEach((block: HTMLElement) => {
-      try {
-        hljs.highlightElement(block);
-      } catch (error) {
-        console.debug('Ошибка при подсветке кода:', error);
+  public toLogout(): void {
+    this._authService.logout();
+  }
+
+  private scrollToBottom(): void {
+    setTimeout(() => {
+      if (this.messagesContainer) {
+        const container: HTMLElement = this.messagesContainer.nativeElement;
+        container.scrollTop = container.scrollHeight;
       }
-    });
-
-    const inlineCodeBlocks: NodeListOf<HTMLElement> = document.querySelectorAll('code:not(pre code):not(.hljs)');
-
-    inlineCodeBlocks.forEach((block: HTMLElement) => {
-      try {
-        if (block.textContent && block.textContent.length > 2) {
-          hljs.highlightElement(block);
-        }
-      } catch (error) {
-        console.debug('Ошибка при подсветке инлайн кода:', error);
-      }
-    });
+    }, 0);
   }
 
   private loadCurrentUser(): void {
-    const savedUser = this._localService.getData('currentUser');
+    const savedUser: string | null = this._localService.getData('currentUser');
     if (savedUser) {
       this.currentUser = JSON.parse(savedUser);
     }
   }
 
+  private loadUsersAndChats(): void {
+    this._usersApiService.getUsers()
+      .pipe(takeUntil(this._destroy$))
+      .subscribe({
+        next: (users: User[]): void => {
+          this._allUsers = users;
+          this.loadChats();
+        },
+        error: (): void => {
+          this.showErrorLoadChatsNotification();
+          this.loadChats();
+        }
+      });
+  }
+
   private loadChats(): void {
     if (this.currentUser && this.currentUser.chats) {
       this.chats = this.currentUser.chats;
-    } else {
-      const savedChats = this._localService.getData('chats');
-      if (savedChats) {
-        this.chats = JSON.parse(savedChats);
-      }
     }
 
-    const activeChat = this._localService.getData('activeChat');
+    const activeChat: string | null = this._localService.getData('activeChat');
     if (activeChat && this.chats.some(c => c.id === activeChat)) {
       this.activeChat = activeChat;
     } else {
@@ -126,27 +142,6 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
     }
 
     setTimeout(() => this.scrollToBottom(), 0);
-  }
-
-  private saveChatsToUser(): void {
-    if (this.currentUser) {
-      this.currentUser.chats = this.chats;
-
-      const savedUsers = this._localService.getData('users');
-      if (savedUsers) {
-        const allUsers: User[] = JSON.parse(savedUsers);
-
-        const userIndex = allUsers.findIndex(user => user.username === this.currentUser!.username);
-        if (userIndex !== -1) {
-          allUsers[userIndex] = this.currentUser;
-
-          this._localService.saveData('users', JSON.stringify(allUsers));
-          this._localService.saveData('currentUser', JSON.stringify(this.currentUser));
-        }
-      }
-    }
-
-    this._localService.saveData('chats', JSON.stringify(this.chats));
   }
 
   public addNewChat(): void {
@@ -162,6 +157,28 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
     this._localService.saveData('activeChat', this.activeChat);
     setTimeout(() => this.scrollToBottom(), 0);
     setTimeout(() => this._focusInputService.focusInput(), 0);
+  }
+
+  private saveChatsToUser(): void {
+    if (!this.currentUser) {
+      return;
+    }
+
+    this.currentUser.chats = this.chats;
+    this._localService.saveData('currentUser', JSON.stringify(this.currentUser));
+
+    const userIndex = this._allUsers.findIndex(user => user.id === this.currentUser!.id);
+    if (userIndex !== -1) {
+      this._allUsers[userIndex] = { ...this.currentUser };
+    }
+
+    this._usersApiService.updateUser(this.currentUser)
+      .pipe(
+        takeUntil(this._destroy$)
+      )
+      .subscribe();
+
+    this._localService.saveData('activeChat', this.activeChat);
   }
 
   public onSelectChat(chatId: string): void {
@@ -186,16 +203,48 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
       }
     }
 
-    this.saveChats();
+    this.saveChatsToUser();
   }
 
   public onCloseSidebar(isOpen: boolean): void {
     this.sidebarIsOpen = isOpen;
   }
 
-  private saveChats(): void {
-    this._localService.saveData('chats', JSON.stringify(this.chats));
-    this._localService.saveData('activeChat', this.activeChat);
+  public async sendMessage(): Promise<void> {
+    if (!this.userInput.trim() || this.isLoading) return;
+
+    const userMessage: string = this.userInput.trim();
+    this.userInput = '';
+
+    const currentChat = this.chats.find(c => c.id === this.activeChat);
+    if (!currentChat) return;
+
+    currentChat.messages.push({ text: userMessage, isUser: true });
+
+    if (currentChat.title === 'Новый чат' && userMessage.length > 0) {
+      currentChat.title = userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage;
+    }
+
+    this.saveChatsToUser();
+    setTimeout(() => this.scrollToBottom(), 0);
+
+    this.isLoading = true;
+
+    try {
+      const response: string = await this._mistralApiService.getAPIResponse(currentChat.messages);
+      currentChat.messages.push({ text: response, isUser: false });
+      this.saveChatsToUser();
+    } catch (err) {
+      currentChat.messages.push({
+        text: 'Извините, произошла ошибка при получении ответа. Попробуйте еще раз.',
+        isUser: false
+      });
+      this.showErrorMistralResponseNotification();
+      this.saveChatsToUser();
+    } finally {
+      this.isLoading = false;
+      setTimeout((): void => this.scrollToBottom(), 0);
+    }
   }
 
   private addCopyButtonsToCodeBlocks(): void {
@@ -266,8 +315,8 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
           button.innerText = originalText;
         }, 2000);
       })
-      .catch(err => {
-        console.error('Ошибка при копировании текста:', err);
+      .catch(() => {
+        this.showErrorCopyCodeNotification();
         button.innerText = 'Ошибка';
 
         setTimeout(() => {
@@ -276,57 +325,51 @@ export class MainChatComponent implements OnInit, AfterViewChecked {
       });
   }
 
-  public async sendMessage(): Promise<void> {
-    if (!this.userInput.trim() || this.isLoading) return;
+  private highlightCodeBlocks(): void {
+    const codeBlocks: NodeListOf<HTMLElement> = document.querySelectorAll('pre code:not(.hljs)');
 
-    const userMessage = this.userInput.trim();
-    this.userInput = '';
+    codeBlocks.forEach((block: HTMLElement) => {
+      try {
+        hljs.highlightElement(block);
+      } catch (error) {
+        this.showErrorHighlightCodeNotification();
+      }
+    });
 
-    const currentChat = this.chats.find(c => c.id === this.activeChat);
-    if (!currentChat) return;
+    const inlineCodeBlocks: NodeListOf<HTMLElement> = document.querySelectorAll('code:not(pre code):not(.hljs)');
 
-    currentChat.messages.push({ text: userMessage, isUser: true });
-
-    if (currentChat.title === 'Новый чат' && userMessage.length > 0) {
-      currentChat.title = userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage;
-    }
-
-    this.saveChatsToUser();
-    setTimeout(() => this.scrollToBottom(), 0);
-
-    this.isLoading = true;
-
-    try {
-      const response = await this._mistralApiService.getAPIResponse(currentChat.messages);
-      currentChat.messages.push({ text: response, isUser: false });
-      this.saveChatsToUser();
-    } catch (error) {
-      console.error('Ошибка при отправке сообщения:', error);
-      currentChat.messages.push({
-        text: 'Извините, произошла ошибка при получении ответа. Попробуйте еще раз.',
-        isUser: false
-      });
-      this.saveChatsToUser();
-    } finally {
-      this.isLoading = false;
-      setTimeout(() => this.scrollToBottom(), 0);
-    }
-  }
-
-  private scrollToBottom(): void {
-    try {
-      setTimeout(() => {
-        if (this.messagesContainer) {
-          const container: HTMLElement = this.messagesContainer.nativeElement;
-          container.scrollTop = container.scrollHeight;
+    inlineCodeBlocks.forEach((block: HTMLElement) => {
+      try {
+        if (block.textContent && block.textContent.length > 2) {
+          hljs.highlightElement(block);
         }
-      }, 0);
-    } catch (err) {
-      console.error('Ошибка при прокрутке сообщений:', err);
-    }
+      } catch (error) {
+        this.showErrorHighlightCodeNotification();
+      }
+    });
   }
 
-  public toLogout(): void {
-    this._authService.logout();
+  private showErrorLoadChatsNotification(): void {
+    this._alerts
+      .open('<strong>Произошла ошибка при загрузке чатов</strong>', { label: 'Ошибка' })
+      .subscribe();
+  }
+
+  private showErrorHighlightCodeNotification(): void {
+    this._alerts
+      .open('<strong>Произошла ошибка при подсветке кода</strong>', { label: 'Ошибка' })
+      .subscribe();
+  }
+
+  private showErrorCopyCodeNotification(): void {
+    this._alerts
+      .open('<strong>Произошла ошибка при копировании текста</strong>', { label: 'Ошибка' })
+      .subscribe();
+  }
+
+  private showErrorMistralResponseNotification(): void {
+    this._alerts
+      .open('<strong>Произошла ошибка при получении ответа. Попробуйте еще раз.</strong>', { label: 'Ошибка' })
+      .subscribe();
   }
 }

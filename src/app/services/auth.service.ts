@@ -35,13 +35,13 @@ export class AuthService {
   }
 
   public getCurrentUser(): User | null {
-    const savedUser = this._localStorageService.getData('currentUser');
+    const savedUser: string | null = this._localStorageService.getData('currentUser');
     return savedUser ? JSON.parse(savedUser) : null;
   }
 
   public isAuthenticated(): boolean {
-    const isLoggedIn = this._localStorageService.getData('isLoggedIn');
-    const currentUser = this.getCurrentUser();
+    const isLoggedIn: string | null = this._localStorageService.getData('isLoggedIn');
+    const currentUser: User | null = this.getCurrentUser();
     return isLoggedIn === 'true' && !!currentUser;
   }
 }
