@@ -16,11 +16,17 @@ import {
   NgOptimizedImage
 } from '@angular/common';
 
+import {
+  Subject,
+  switchMap,
+  takeUntil
+} from 'rxjs';
+
 import { NavigateService } from '../../../services/navigate.service';
 import { User } from '../../../interfaces/user';
-import { LocalStorageService } from '../../../services/local-storage.service';
 import { AuthService } from '../../../services/auth.service';
 import { TuiAlertService } from '@taiga-ui/core';
+import { UsersApiService } from '../../../services/users-api.service';
 
 @Component({
   selector: 'app-login',
@@ -39,15 +45,24 @@ export class LoginComponent implements OnInit {
     password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] })
   });
 
-  private _navigateService = inject(NavigateService);
-  private _localStorageService = inject(LocalStorageService);
-  private _authService = inject(AuthService);
-  private readonly _alerts = inject(TuiAlertService);
+  private _allUsers: User[] = [];
+  private _destroy$: Subject<void> = new Subject<void>();
+  private _navigateService: NavigateService = inject(NavigateService);
+  private _authService: AuthService = inject(AuthService);
+  private readonly _alerts: TuiAlertService = inject(TuiAlertService);
+  private readonly _usersApiService: UsersApiService = inject(UsersApiService);
 
   public ngOnInit(): void {
     if (this._authService.isAuthenticated()) {
       this._navigateService.navigateToMainChat();
     }
+
+    this._usersApiService.getUsers()
+      .pipe(
+        takeUntil(this._destroy$),
+        switchMap(users => users.map(user => this._allUsers.push(user)))
+      )
+      .subscribe();
   }
 
   public goRegister(): void {
@@ -69,11 +84,7 @@ export class LoginComponent implements OnInit {
       password: this.loginForm.value.password!
     };
 
-    const savedUsers: string = this._localStorageService.getData('users')!;
-
-    const allUsers: User[] = JSON.parse(savedUsers);
-
-    const user = allUsers.find(user =>
+    const user: User | undefined = this._allUsers.find(user =>
       user.username === loginData.username && user.password === loginData.password
     );
 
