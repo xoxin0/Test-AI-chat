@@ -38,7 +38,7 @@
 
     <div class="messages" #messagesContainer>
       <div
-        *ngFor="let msg of messages"
+        *ngFor="let msg of getMessages()"
         [class.user]="msg.isUser"
         class="message"
       >
@@ -69,6 +69,22 @@
       >
         Отправить
       </button>
+    </div>
+  </div>
+
+  <div *ngIf="showHtmlPreview" class="html-preview-modal" (click)="closeHtmlPreview()">
+    <div class="html-preview-container" (click)="$event.stopPropagation()">
+      <div class="html-preview-header">
+        <h3 class="sim-title">HTML Страница</h3>
+        <button class="close-button" (click)="closeHtmlPreview()">×</button>
+      </div>
+      <div class="html-preview-content">
+        <iframe
+          *ngIf="htmlPreviewUrl"
+          [src]="htmlPreviewUrl"
+          class="html-preview-iframe">
+        </iframe>
+      </div>
     </div>
   </div>
 </div>

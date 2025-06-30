@@ -8,9 +8,15 @@
     priority
   >
 
-  <div class="reveal-text">
-    Привет, это TestAI!
-  </div>
+  @if (_authService.isAuthenticated()) {
+    <div class="reveal-text username">
+      Привет {{ _currentUser?.username }}
+    </div>
+  } @else {
+    <div class="reveal-text">
+      Привет, это TestAI!
+    </div>
+  }
 
   <button
     (click)="navigateToMainChat()"

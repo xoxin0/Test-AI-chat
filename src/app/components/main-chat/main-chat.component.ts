@@ -19,6 +19,11 @@ import {
   takeUntil
 } from 'rxjs';
 
+import {
+  DomSanitizer,
+  SafeResourceUrl
+} from '@angular/platform-browser';
+
 import { MarkdownModule } from 'ngx-markdown';
 import { FormsModule } from '@angular/forms';
 import { LocalStorageService } from '../../services/local-storage.service';
@@ -55,8 +60,11 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   public isLoading: boolean = false;
   public sidebarIsOpen: boolean = true;
   public currentUser: User | null = null;
+  public showHtmlPreview: boolean = false;
+  public htmlPreviewUrl: SafeResourceUrl | null = null;
 
   private _allUsers: User[] = [];
+  private _currentBlobUrl: string | null = null;
   private readonly _localService: LocalStorageService = inject(LocalStorageService);
   private readonly _clipboardService: ClipboardService = inject(ClipboardService);
   private readonly _focusInputService: FocusInputService = inject(FocusInputService);
@@ -64,15 +72,11 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   private readonly _authService: AuthService = inject(AuthService);
   private readonly _usersApiService: UsersApiService = inject(UsersApiService);
   private readonly _alerts: TuiAlertService = inject(TuiAlertService);
+  private readonly _sanitizer: DomSanitizer = inject(DomSanitizer);
   private readonly _destroy$: any = new Subject<void>();
   private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
 
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
-
-  get messages(): Message[] {
-    const chat: Chat | undefined = this.chats.find(chat => chat.id === this.activeChat);
-    return chat ? chat.messages : [];
-  }
 
   public ngOnInit(): void {
     this.loadCurrentUser();
@@ -88,10 +92,88 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   public ngOnDestroy(): void {
     this._destroy$.next();
     this._destroy$.complete();
+    this.cleanupBlobUrl();
+  }
+
+  public getMessages(): Message[] {
+    const chat: Chat | undefined = this.chats.find(chat => chat.id === this.activeChat);
+    return chat ? chat.messages : [];
   }
 
   public toLogout(): void {
     this._authService.logout();
+  }
+
+  public openHtmlSimulation(htmlContent: string): void {
+    this.cleanupBlobUrl();
+
+    const processedHtml: string = this.processHtmlContent(htmlContent);
+
+    const blob = new Blob([processedHtml], { type: 'text/html' });
+    this._currentBlobUrl = URL.createObjectURL(blob);
+    this.htmlPreviewUrl = this._sanitizer.bypassSecurityTrustResourceUrl(this._currentBlobUrl);
+
+    this.showHtmlPreview = true;
+  }
+
+  public closeHtmlPreview(): void {
+    this.showHtmlPreview = false;
+    this.htmlPreviewUrl = null;
+    this.cleanupBlobUrl();
+  }
+
+  private cleanupBlobUrl(): void {
+    if (this._currentBlobUrl) {
+      URL.revokeObjectURL(this._currentBlobUrl);
+      this._currentBlobUrl = null;
+    }
+  }
+
+  private processHtmlContent(htmlContent: string): string {
+    const cleanHtml: string = htmlContent.trim();
+
+    if (cleanHtml.includes('<!DOCTYPE') || cleanHtml.toLowerCase().includes('<!doctype')) {
+      return cleanHtml;
+    }
+
+    if (cleanHtml.includes('<html') && cleanHtml.includes('<head') && cleanHtml.includes('<body')) {
+      return `<!DOCTYPE html>\n${cleanHtml}`;
+    }
+
+    const styleMatch: RegExpMatchArray  | null = cleanHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    let extractedStyles: string = '';
+    let htmlWithoutStyles: string = cleanHtml;
+
+    if (styleMatch) {
+      extractedStyles = styleMatch[1];
+      htmlWithoutStyles = cleanHtml.replace(styleMatch[0], '').trim();
+    }
+
+    const scriptMatches: RegExpMatchArray  | null = cleanHtml.match(/<script[^>]*>([\s\S]*?)<\/script>/gi);
+    let extractedScripts: string = '';
+
+    if (scriptMatches) {
+      extractedScripts = scriptMatches.join('\n');
+      htmlWithoutStyles = htmlWithoutStyles.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').trim();
+    }
+
+    return `
+      <!DOCTYPE html>
+      <html lang="ru">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>HTML Симуляция</title>
+        <style>
+          ${extractedStyles}
+        </style>
+      </head>
+      <body>
+        ${htmlWithoutStyles}
+        ${extractedScripts}
+      </body>
+      </html>
+    `;
   }
 
   private scrollToBottom(): void {
@@ -266,13 +348,29 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
       languageLabel.className = 'language-label';
       languageLabel.innerText = language;
 
+      const buttonsContainer: HTMLDivElement = document.createElement('div');
+      buttonsContainer.className = 'code-buttons';
+
       const copyButton: HTMLButtonElement = document.createElement('button');
       copyButton.className = 'copy-button';
       copyButton.innerText = 'Copy';
       copyButton.addEventListener('click', () => this.copyCodeContent(codeBlock, copyButton));
 
+      if (language === 'html') {
+        const simulationButton: HTMLButtonElement = document.createElement('button');
+        simulationButton.className = 'simulation-button';
+        simulationButton.innerText = 'View';
+        simulationButton.addEventListener('click', () => {
+          const htmlContent: string = codeBlock.querySelector('code')?.textContent || '';
+          this.openHtmlSimulation(htmlContent);
+        });
+
+        buttonsContainer.appendChild(simulationButton);
+      }
+
+      buttonsContainer.appendChild(copyButton);
       headerContainer.appendChild(languageLabel);
-      headerContainer.appendChild(copyButton);
+      headerContainer.appendChild(buttonsContainer);
 
       wrapper.insertBefore(headerContainer, codeBlock);
 

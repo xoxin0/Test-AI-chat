@@ -26,6 +26,10 @@
   animation-timing-function: cubic-bezier(0.0, 0.0, 0.2, 0.5);
 }
 
+.username {
+  animation-duration: var(--duration, 1000ms);
+}
+
 .reveal-text {
   --animation-delay: var(--delay, 700ms);
   --animation-duration: var(--duration, 800ms);
