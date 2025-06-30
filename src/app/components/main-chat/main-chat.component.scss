@@ -10,12 +10,15 @@
 
   .chat-container {
     background-color: $background-chat-color;
-    width: 60%;
+    width: 70%;
+    height: 90%;
     margin: 20px auto;
     border: 1px solid $border-color;
     border-radius: 8px;
     padding: 15px;
     font-size: 16px;
+    display: flex;
+    flex-direction: column;
 
     .header-container {
       display: flex;
@@ -53,7 +56,7 @@
 
     .messages {
       @include scrollbar;
-      height: 70vh;
+      height: 85%;
       overflow-y: auto;
       margin-bottom: 15px;
 
@@ -196,10 +199,23 @@
     .input-container {
       display: flex;
       gap: 10px;
+      width: 90%;
+      border-radius: 15px;
+      background-color: $background-color;
+      padding: 8px 12px;
+      margin: 5px auto;
+      border: 1px solid $border-color;
 
       .input-message {
         @include ui-input;
         flex: 1;
+        font-size: 16px;
+
+        &:focus {
+          outline: none;
+          border: none;
+          box-shadow: none;
+        }
 
         &:disabled {
           opacity: 0.7;
@@ -209,6 +225,7 @@
       .send-button {
         @include ui-button;
         transition: background-color 0.2s ease, opacity 0.2s ease;
+        align-self: center;
 
         &:disabled {
           background-color: $button-and-messages-color;
