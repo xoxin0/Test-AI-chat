@@ -55,14 +55,24 @@
     </div>
 
     <div class="input-container">
-      <input
+<!--      <input-->
+<!--        [(ngModel)]="userInput"-->
+<!--        (keyup.enter)="sendMessage()"-->
+<!--        placeholder="Введите сообщение..."-->
+<!--        class="input-message"-->
+<!--      >-->
+      <textarea
+        #textareaRef
         [(ngModel)]="userInput"
         (keyup.enter)="sendMessage()"
+        (input)="adjustTextareaHeight()"
         placeholder="Введите сообщение..."
         class="input-message"
-      >
+        rows="1"
+      ></textarea>
 
       <button
+        #sendButtonRef
         (click)="sendMessage()"
         class="send-button"
         [disabled]="isLoading || !userInput.trim()"
@@ -72,16 +82,16 @@
     </div>
   </div>
 
-  <div *ngIf="showHtmlPreview" class="html-preview-modal" (click)="closeHtmlPreview()">
+  <div *ngIf="_clipboardService.showHtmlPreview" class="html-preview-modal" (click)="_clipboardService.closeHtmlPreview()">
     <div class="html-preview-container" (click)="$event.stopPropagation()">
       <div class="html-preview-header">
         <h3 class="sim-title">HTML Страница</h3>
-        <button class="close-button" (click)="closeHtmlPreview()">×</button>
+        <button class="close-button" (click)="_clipboardService.closeHtmlPreview()">×</button>
       </div>
       <div class="html-preview-content">
         <iframe
-          *ngIf="htmlPreviewUrl"
-          [src]="htmlPreviewUrl"
+          *ngIf="_clipboardService.htmlPreviewUrl"
+          [src]="_clipboardService.htmlPreviewUrl"
           class="html-preview-iframe">
         </iframe>
       </div>

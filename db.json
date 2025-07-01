@@ -1,3 +1,29 @@
 {
-  "users": []
+  "users": [
+    {
+      "id": "ac5c",
+      "username": "xoxin",
+      "password": "123456",
+      "chats": [
+        {
+          "id": "1751380822311",
+          "title": "привет",
+          "messages": [
+            {
+              "text": "Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?",
+              "isUser": false
+            },
+            {
+              "text": "привет",
+              "isUser": true
+            },
+            {
+              "text": "Привет! Как я могу помочь вам сегодня?",
+              "isUser": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

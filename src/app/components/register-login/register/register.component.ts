@@ -26,8 +26,9 @@ import {
 import { NavigateService } from '../../../services/navigate.service';
 import { User } from '../../../interfaces/user';
 import { AuthService } from '../../../services/auth.service';
-import { TuiAlertService } from '@taiga-ui/core';
 import { UsersApiService } from '../../../services/users-api.service';
+import { VisibilityPassService } from '../../../services/visibility-pass.service';
+import { ErrorAlertService } from '../../../services/error-alert.service';
 
 @Component({
   selector: 'app-register',
@@ -46,12 +47,14 @@ export class RegisterComponent implements OnInit, OnDestroy {
     password: new FormControl<string>('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] })
   });
 
-  private _navigateService = inject(NavigateService);
-  private _authService = inject(AuthService);
+  protected readonly _visibilityPassService: VisibilityPassService = inject(VisibilityPassService);
+
   private _destroy$: Subject<void> = new Subject<void>();
   private _allUsers: User[] = [];
+  private readonly _navigateService = inject(NavigateService);
+  private readonly _authService = inject(AuthService);
   private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
-  private readonly _alerts: TuiAlertService = inject(TuiAlertService);
+  private readonly _errorAlertService = inject(ErrorAlertService);
   private readonly _usersApiService: UsersApiService = inject(UsersApiService);
 
   public ngOnInit(): void {
@@ -74,14 +77,14 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
   public onRegister(): void {
     if (this.registerForm.invalid) {
-      this.showErrorFormNotification();
+      this._errorAlertService.showErrorFormNotification();
       return;
     }
 
     const userExists: boolean = this._allUsers.some(user => user.username === this.registerForm.value.username!);
 
     if (userExists) {
-      this.showErrorDataNotification();
+      this._errorAlertService.showErrorDataNotification();
       return;
     }
 
@@ -115,17 +118,5 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
   public goMainChat(): void {
     this._navigateService.navigateToMainChat();
-  }
-
-  private showErrorDataNotification(): void {
-    this._alerts
-      .open('<strong>Пользователь уже существует</strong>', { label: 'Ошибка' })
-      .subscribe();
-  }
-
-  private showErrorFormNotification(): void {
-    this._alerts
-      .open('<strong>Пожалуйста, заполните все поля корректно</strong>', { label: 'Ошибка' })
-      .subscribe();
   }
 }

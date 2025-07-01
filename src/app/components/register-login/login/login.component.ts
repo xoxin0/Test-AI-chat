@@ -25,8 +25,9 @@ import {
 import { NavigateService } from '../../../services/navigate.service';
 import { User } from '../../../interfaces/user';
 import { AuthService } from '../../../services/auth.service';
-import { TuiAlertService } from '@taiga-ui/core';
 import { UsersApiService } from '../../../services/users-api.service';
+import { VisibilityPassService } from '../../../services/visibility-pass.service';
+import { ErrorAlertService } from '../../../services/error-alert.service';
 
 @Component({
   selector: 'app-login',
@@ -45,11 +46,13 @@ export class LoginComponent implements OnInit {
     password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] })
   });
 
+  protected readonly _visibilityPassService: VisibilityPassService = inject(VisibilityPassService);
+
   private _allUsers: User[] = [];
   private _destroy$: Subject<void> = new Subject<void>();
-  private _navigateService: NavigateService = inject(NavigateService);
-  private _authService: AuthService = inject(AuthService);
-  private readonly _alerts: TuiAlertService = inject(TuiAlertService);
+  private readonly _navigateService: NavigateService = inject(NavigateService);
+  private readonly _authService: AuthService = inject(AuthService);
+  private readonly _errorAlertService = inject(ErrorAlertService);
   private readonly _usersApiService: UsersApiService = inject(UsersApiService);
 
   public ngOnInit(): void {
@@ -75,7 +78,7 @@ export class LoginComponent implements OnInit {
 
   public onLogin(): void {
     if (this.loginForm.invalid) {
-      this.showErrorFormNotification()
+      this._errorAlertService.showErrorFormNotification()
       return;
     }
 
@@ -89,24 +92,12 @@ export class LoginComponent implements OnInit {
     );
 
     if (!user) {
-      this.showErrorDataNotification();
+      this._errorAlertService.showErrorDataFormNotification();
       return;
     }
 
     this._authService.login(user);
 
     this.goMainChat();
-  }
-
-  private showErrorDataNotification(): void {
-    this._alerts
-      .open('<strong>Неверное имя пользователя или пароль</strong>', {label: 'Ошибка'})
-      .subscribe();
-  }
-
-  private showErrorFormNotification(): void {
-    this._alerts
-      .open('<strong>Некорректные данные</strong>', {label: 'Ошибка'})
-      .subscribe();
   }
 }

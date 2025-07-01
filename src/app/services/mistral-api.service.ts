@@ -41,7 +41,6 @@ export class MistralApiService {
 
       throw new Error('Нет ответа от API');
     } catch (error) {
-      console.error('Ошибка при получении ответа от Mistral API:', error);
       throw error;
     }
   }

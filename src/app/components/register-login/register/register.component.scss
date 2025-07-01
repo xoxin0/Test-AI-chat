@@ -2,6 +2,7 @@
 
 .form-container {
   @include ui-form-container;
+  @include visibility-pass;
 }
 
 .error-message {

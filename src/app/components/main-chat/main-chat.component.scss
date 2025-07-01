@@ -207,9 +207,16 @@
       border: 1px solid $border-color;
 
       .input-message {
+        @include scrollbar;
         @include ui-input;
         flex: 1;
         font-size: 16px;
+        resize: none;
+        overflow-y: hidden;
+        line-height: 24px;
+        min-height: 24px;
+        max-height: 120px;
+        transition: height 0.1s ease;
 
         &:focus {
           outline: none;

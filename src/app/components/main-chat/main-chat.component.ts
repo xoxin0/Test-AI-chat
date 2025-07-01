@@ -19,15 +19,10 @@ import {
   takeUntil
 } from 'rxjs';
 
-import {
-  DomSanitizer,
-  SafeResourceUrl
-} from '@angular/platform-browser';
-
 import { MarkdownModule } from 'ngx-markdown';
 import { FormsModule } from '@angular/forms';
 import { LocalStorageService } from '../../services/local-storage.service';
-import { ClipboardService } from '../../services/clipboard.service';
+import { HeaderCodeService } from '../../services/header-code.service';
 import { MistralApiService } from '../../services/mistral-api.service';
 import { Message } from '../../interfaces/message';
 import { SideBarComponent } from '../side-bar/side-bar.component';
@@ -36,8 +31,7 @@ import { FocusInputService } from '../../services/focus-input.service';
 import { User } from '../../interfaces/user';
 import { AuthService } from '../../services/auth.service';
 import { UsersApiService } from '../../services/users-api.service';
-import { TuiAlertService } from '@taiga-ui/core';
-import hljs from 'highlight.js';
+import { ErrorAlertService } from '../../services/error-alert.service';
 
 @Component({
   selector: 'app-main-chat',
@@ -60,23 +54,21 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   public isLoading: boolean = false;
   public sidebarIsOpen: boolean = true;
   public currentUser: User | null = null;
-  public showHtmlPreview: boolean = false;
-  public htmlPreviewUrl: SafeResourceUrl | null = null;
+
+  protected readonly _clipboardService: HeaderCodeService = inject(HeaderCodeService);
 
   private _allUsers: User[] = [];
-  private _currentBlobUrl: string | null = null;
+  private readonly _errorAlertService = inject(ErrorAlertService);
   private readonly _localService: LocalStorageService = inject(LocalStorageService);
-  private readonly _clipboardService: ClipboardService = inject(ClipboardService);
   private readonly _focusInputService: FocusInputService = inject(FocusInputService);
   private readonly _mistralApiService: MistralApiService = inject(MistralApiService);
   private readonly _authService: AuthService = inject(AuthService);
   private readonly _usersApiService: UsersApiService = inject(UsersApiService);
-  private readonly _alerts: TuiAlertService = inject(TuiAlertService);
-  private readonly _sanitizer: DomSanitizer = inject(DomSanitizer);
   private readonly _destroy$: any = new Subject<void>();
   private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
 
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
+  @ViewChild('textareaRef') private textareaRef!: ElementRef<HTMLTextAreaElement>;
 
   public ngOnInit(): void {
     this.loadCurrentUser();
@@ -85,14 +77,33 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   public ngAfterViewChecked(): void {
-    this.highlightCodeBlocks();
-    this.addCopyButtonsToCodeBlocks();
+    this._clipboardService.highlightCodeBlocks();
+    this._clipboardService.addCopyButtonsAndViewToCodeBlocks();
   }
 
   public ngOnDestroy(): void {
     this._destroy$.next();
     this._destroy$.complete();
-    this.cleanupBlobUrl();
+    this._clipboardService.cleanupBlobUrl();
+  }
+
+  public adjustTextareaHeight(): void {
+    const textarea: HTMLTextAreaElement = this.textareaRef.nativeElement;
+    const lineHeight = 24;
+    const maxRows = 5;
+
+    textarea.style.height = 'auto';
+
+    const scrollHeight: number = textarea.scrollHeight;
+    const rows: number = Math.floor(scrollHeight / lineHeight);
+
+    if (scrollHeight <= maxRows * lineHeight) {
+      textarea.style.height = `${ Math.min(rows, maxRows) * lineHeight }px`;
+      textarea.style.overflowY = 'hidden';
+    } else {
+      textarea.style.height = `${ maxRows * lineHeight }px`;
+      textarea.style.overflowY = 'auto';
+    }
   }
 
   public getMessages(): Message[] {
@@ -102,78 +113,6 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   public toLogout(): void {
     this._authService.logout();
-  }
-
-  public openHtmlSimulation(htmlContent: string): void {
-    this.cleanupBlobUrl();
-
-    const processedHtml: string = this.processHtmlContent(htmlContent);
-
-    const blob = new Blob([processedHtml], { type: 'text/html' });
-    this._currentBlobUrl = URL.createObjectURL(blob);
-    this.htmlPreviewUrl = this._sanitizer.bypassSecurityTrustResourceUrl(this._currentBlobUrl);
-
-    this.showHtmlPreview = true;
-  }
-
-  public closeHtmlPreview(): void {
-    this.showHtmlPreview = false;
-    this.htmlPreviewUrl = null;
-    this.cleanupBlobUrl();
-  }
-
-  private cleanupBlobUrl(): void {
-    if (this._currentBlobUrl) {
-      URL.revokeObjectURL(this._currentBlobUrl);
-      this._currentBlobUrl = null;
-    }
-  }
-
-  private processHtmlContent(htmlContent: string): string {
-    const cleanHtml: string = htmlContent.trim();
-
-    if (cleanHtml.includes('<!DOCTYPE') || cleanHtml.toLowerCase().includes('<!doctype')) {
-      return cleanHtml;
-    }
-
-    if (cleanHtml.includes('<html') && cleanHtml.includes('<head') && cleanHtml.includes('<body')) {
-      return `<!DOCTYPE html>\n${cleanHtml}`;
-    }
-
-    const styleMatch: RegExpMatchArray  | null = cleanHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-    let extractedStyles: string = '';
-    let htmlWithoutStyles: string = cleanHtml;
-
-    if (styleMatch) {
-      extractedStyles = styleMatch[1];
-      htmlWithoutStyles = cleanHtml.replace(styleMatch[0], '').trim();
-    }
-
-    const scriptMatches: RegExpMatchArray  | null = cleanHtml.match(/<script[^>]*>([\s\S]*?)<\/script>/gi);
-    let extractedScripts: string = '';
-
-    if (scriptMatches) {
-      extractedScripts = scriptMatches.join('\n');
-      htmlWithoutStyles = htmlWithoutStyles.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').trim();
-    }
-
-    return `
-      <!DOCTYPE html>
-      <html lang="ru">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>HTML Симуляция</title>
-        <style>
-          ${extractedStyles}
-        </style>
-      </head>
-      <body>
-        ${htmlWithoutStyles}
-        ${extractedScripts}
-      </body>
-      </html>
-    `;
   }
 
   private scrollToBottom(): void {
@@ -186,9 +125,8 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   private loadCurrentUser(): void {
-    const savedUser: string | null = this._localService.getData('currentUser');
-    if (savedUser) {
-      this.currentUser = JSON.parse(savedUser);
+    if (this._localService.getData('currentUser')) {
+      this.currentUser = JSON.parse(<string>this._localService.getData('currentUser'));
     }
   }
 
@@ -201,7 +139,7 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
           this.loadChats();
         },
         error: (): void => {
-          this.showErrorLoadChatsNotification();
+          this._errorAlertService.showErrorLoadChatsNotification();
           this.loadChats();
         }
       });
@@ -298,6 +236,10 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     const userMessage: string = this.userInput.trim();
     this.userInput = '';
 
+    if (this.textareaRef) {
+      this.textareaRef.nativeElement.style.height = 'auto';
+    }
+
     const currentChat = this.chats.find(c => c.id === this.activeChat);
     if (!currentChat) return;
 
@@ -321,153 +263,12 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
         text: 'Извините, произошла ошибка при получении ответа. Попробуйте еще раз.',
         isUser: false
       });
-      this.showErrorMistralResponseNotification();
+
+      this._errorAlertService.showErrorMistralResponseNotification();
       this.saveChatsToUser();
     } finally {
       this.isLoading = false;
       setTimeout((): void => this.scrollToBottom(), 0);
     }
-  }
-
-  private addCopyButtonsToCodeBlocks(): void {
-    const codeBlocks: NodeListOf<Element> = document.querySelectorAll('pre:not(.copy-button-added)');
-
-    codeBlocks.forEach(codeBlock => {
-      // обертка для позиционирования хэдера с кодом
-      const wrapper: HTMLDivElement = document.createElement('div');
-      wrapper.className = 'code-block-wrapper';
-      codeBlock.parentNode?.insertBefore(wrapper, codeBlock);
-      wrapper.appendChild(codeBlock);
-
-      const headerContainer: HTMLDivElement = document.createElement('div');
-      headerContainer.className = 'code-header';
-
-      const language: string = this.getLanguageFromCodeBlock(codeBlock);
-
-      const languageLabel: HTMLSpanElement = document.createElement('span');
-      languageLabel.className = 'language-label';
-      languageLabel.innerText = language;
-
-      const buttonsContainer: HTMLDivElement = document.createElement('div');
-      buttonsContainer.className = 'code-buttons';
-
-      const copyButton: HTMLButtonElement = document.createElement('button');
-      copyButton.className = 'copy-button';
-      copyButton.innerText = 'Copy';
-      copyButton.addEventListener('click', () => this.copyCodeContent(codeBlock, copyButton));
-
-      if (language === 'html') {
-        const simulationButton: HTMLButtonElement = document.createElement('button');
-        simulationButton.className = 'simulation-button';
-        simulationButton.innerText = 'View';
-        simulationButton.addEventListener('click', () => {
-          const htmlContent: string = codeBlock.querySelector('code')?.textContent || '';
-          this.openHtmlSimulation(htmlContent);
-        });
-
-        buttonsContainer.appendChild(simulationButton);
-      }
-
-      buttonsContainer.appendChild(copyButton);
-      headerContainer.appendChild(languageLabel);
-      headerContainer.appendChild(buttonsContainer);
-
-      wrapper.insertBefore(headerContainer, codeBlock);
-
-      codeBlock.classList.add('copy-button-added');
-    });
-  }
-
-  private getLanguageFromCodeBlock(codeBlock: Element): string {
-    const codeElement = codeBlock.querySelector('code');
-    if (!codeElement) return 'code';
-
-    const className = codeElement.className;
-
-    if (className.includes('language-')) {
-      return className.split('language-')[1]
-        .split(' ')[0];
-    }
-
-    if (className.includes('hljs')) {
-      const match: RegExpMatchArray | null = className.match(/hljs-(\w+)/);
-      return match ? match[1] : 'code';
-    }
-
-    return 'code';
-  }
-
-  private copyCodeContent(codeBlock: Element, button: HTMLButtonElement): void {
-    if (button.innerText !== 'Copy') {
-      return;
-    }
-
-    const code: string = codeBlock.textContent || '';
-
-    this._clipboardService.copyToClipboard(code)
-      .then(() => {
-        const originalText: string = button.innerText;
-        button.innerText = 'Copied ✓';
-
-        setTimeout(() => {
-          button.innerText = originalText;
-        }, 2000);
-      })
-      .catch(() => {
-        this.showErrorCopyCodeNotification();
-        button.innerText = 'Ошибка';
-
-        setTimeout(() => {
-          button.innerText = 'Copy';
-        }, 2000);
-      });
-  }
-
-  private highlightCodeBlocks(): void {
-    const codeBlocks: NodeListOf<HTMLElement> = document.querySelectorAll('pre code:not(.hljs)');
-
-    codeBlocks.forEach((block: HTMLElement) => {
-      try {
-        hljs.highlightElement(block);
-      } catch (error) {
-        this.showErrorHighlightCodeNotification();
-      }
-    });
-
-    const inlineCodeBlocks: NodeListOf<HTMLElement> = document.querySelectorAll('code:not(pre code):not(.hljs)');
-
-    inlineCodeBlocks.forEach((block: HTMLElement) => {
-      try {
-        if (block.textContent && block.textContent.length > 2) {
-          hljs.highlightElement(block);
-        }
-      } catch (error) {
-        this.showErrorHighlightCodeNotification();
-      }
-    });
-  }
-
-  private showErrorLoadChatsNotification(): void {
-    this._alerts
-      .open('<strong>Произошла ошибка при загрузке чатов</strong>', { label: 'Ошибка' })
-      .subscribe();
-  }
-
-  private showErrorHighlightCodeNotification(): void {
-    this._alerts
-      .open('<strong>Произошла ошибка при подсветке кода</strong>', { label: 'Ошибка' })
-      .subscribe();
-  }
-
-  private showErrorCopyCodeNotification(): void {
-    this._alerts
-      .open('<strong>Произошла ошибка при копировании текста</strong>', { label: 'Ошибка' })
-      .subscribe();
-  }
-
-  private showErrorMistralResponseNotification(): void {
-    this._alerts
-      .open('<strong>Произошла ошибка при получении ответа. Попробуйте еще раз.</strong>', { label: 'Ошибка' })
-      .subscribe();
   }
 }

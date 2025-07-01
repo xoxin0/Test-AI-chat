@@ -6,6 +6,6 @@ import { Injectable } from '@angular/core';
 
 export class FocusInputService {
   public focusInput(): void {
-    document.querySelector("input")!.focus();
+    document.querySelector("textarea")!.focus();
   }
 }

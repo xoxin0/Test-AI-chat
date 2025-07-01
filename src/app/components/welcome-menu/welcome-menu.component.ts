@@ -18,10 +18,11 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './welcome-menu.component.scss'
 })
 export class WelcomeMenuComponent {
-  private _navigateService = inject(NavigateService);
-  private _localStorageService = inject(LocalStorageService);
+  private _navigateService: NavigateService = inject(NavigateService);
+  private _localStorageService: LocalStorageService = inject(LocalStorageService);
+
   protected _currentUser: User = JSON.parse(<string>this._localStorageService.getData('currentUser'))
-  protected _authService = inject(AuthService);
+  protected _authService: AuthService = inject(AuthService);
 
   public navigateToMainChat() {
     this._navigateService.navigateToLogin();
