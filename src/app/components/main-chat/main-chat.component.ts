@@ -176,7 +176,6 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.activeChat = newChat.id;
     this.saveChatsToUser();
     this._localService.saveData('activeChat', this.activeChat);
-    this.onCloseSidebar(false);
     setTimeout(() => this.scrollToBottom(), 0);
     setTimeout(() => this._focusInputService.focusInput(), 0);
   }
