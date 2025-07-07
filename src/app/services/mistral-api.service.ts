@@ -39,7 +39,7 @@ export class MistralApiService {
         return chatResponse.choices[0].message.content!.toString();
       }
 
-      throw new Error('Нет ответа от API');
+      return 'Нет ответа от API';
     } catch (error) {
       throw error;
     }

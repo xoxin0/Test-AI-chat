@@ -8,8 +8,17 @@
     (removeChat)="onRemoveChat($event)"
     (closeSidebar)="onCloseSidebar($event)"
   ></app-side-bar>
+
   <div class="chat-container">
-    <header class="header-container">
+    <button
+      class="open-sidebar-btn"
+      (click)="onCloseSidebar(true)"
+      *ngIf="window.innerWidth <= 900"
+    >
+      >
+    </button>
+
+    <div class="header-container">
       <img
         ngSrc="assets/logo-white.png"
         alt="logo"
@@ -19,7 +28,12 @@
       >
 
       <div class="user-info">
-        <p class="username">{{ currentUser?.username }}</p>
+        <p
+          class="username"
+          *ngIf="window.innerWidth > 500"
+        >
+          {{ currentUser?.username }}
+        </p>
 
         <button
           class="logout-btn"
@@ -34,7 +48,7 @@
         </button>
 
       </div>
-    </header>
+    </div>
 
     <div class="messages" #messagesContainer>
       <div
@@ -47,6 +61,7 @@
           [data]="msg.text"
         ></markdown>
       </div>
+
       <div *ngIf="isLoading" class="message loading">
         <span class="dot"></span>
         <span class="dot"></span>
@@ -55,12 +70,6 @@
     </div>
 
     <div class="input-container">
-<!--      <input-->
-<!--        [(ngModel)]="userInput"-->
-<!--        (keyup.enter)="sendMessage()"-->
-<!--        placeholder="Введите сообщение..."-->
-<!--        class="input-message"-->
-<!--      >-->
       <textarea
         #textareaRef
         [(ngModel)]="userInput"
@@ -72,7 +81,6 @@
       ></textarea>
 
       <button
-        #sendButtonRef
         (click)="sendMessage()"
         class="send-button"
         [disabled]="isLoading || !userInput.trim()"
@@ -82,12 +90,26 @@
     </div>
   </div>
 
-  <div *ngIf="_clipboardService.showHtmlPreview" class="html-preview-modal" (click)="_clipboardService.closeHtmlPreview()">
-    <div class="html-preview-container" (click)="$event.stopPropagation()">
+  <div
+    *ngIf="_clipboardService.showHtmlPreview"
+    class="html-preview-modal"
+    (click)="_clipboardService.closeHtmlPreview()"
+  >
+    <div
+      class="html-preview-container"
+      (click)="$event.stopPropagation()"
+    >
       <div class="html-preview-header">
         <h3 class="sim-title">HTML Страница</h3>
-        <button class="close-button" (click)="_clipboardService.closeHtmlPreview()">×</button>
+
+        <button
+          class="close-button"
+          (click)="_clipboardService.closeHtmlPreview()"
+        >
+          ×
+        </button>
       </div>
+
       <div class="html-preview-content">
         <iframe
           *ngIf="_clipboardService.htmlPreviewUrl"

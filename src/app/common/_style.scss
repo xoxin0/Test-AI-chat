@@ -84,6 +84,7 @@ $delete-chat-hover-color: #f44336;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
+    margin: 0 10px;
 
     .input-username-container, .input-password-container{
       display: flex;
@@ -106,6 +107,21 @@ $delete-chat-hover-color: #f44336;
       &:hover {
         background-color: $button-and-messages-color;
         transform: none;
+      }
+    }
+  }
+
+  @media (max-width: 400px) {
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+
+      .logo {
+        margin: 15px;
+      }
+
+      .button-go-register, .button-go-login {
+        margin: 15px 10px;
       }
     }
   }

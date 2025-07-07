@@ -16,6 +16,8 @@ import { Chat } from '../../interfaces/chat';
 })
 
 export class SideBarComponent {
+  protected readonly window: Window = window;
+
   @Input() chats: Chat[] = [];
   @Input() activeChat: string = '';
   @Input() isOpen: boolean = true;

@@ -52,10 +52,11 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   public activeChat: string = '';
   public userInput: string = '';
   public isLoading: boolean = false;
-  public sidebarIsOpen: boolean = true;
+  public sidebarIsOpen: boolean = false;
   public currentUser: User | null = null;
 
   protected readonly _clipboardService: HeaderCodeService = inject(HeaderCodeService);
+  protected readonly window: Window = window;
 
   private _allUsers: User[] = [];
   private readonly _errorAlertService = inject(ErrorAlertService);
@@ -175,6 +176,7 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.activeChat = newChat.id;
     this.saveChatsToUser();
     this._localService.saveData('activeChat', this.activeChat);
+    this.onCloseSidebar(false);
     setTimeout(() => this.scrollToBottom(), 0);
     setTimeout(() => this._focusInputService.focusInput(), 0);
   }
@@ -206,6 +208,7 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     this._localService.saveData('activeChat', chatId);
     this.scrollToBottom();
     this._focusInputService.focusInput();
+    this.onCloseSidebar(false);
   }
 
   public onRemoveChat(chatId: string): void {
