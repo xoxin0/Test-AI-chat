@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Mistral } from '@mistralai/mistralai';
 import { ChatCompletionResponse } from '@mistralai/mistralai/models/components';
-import { API_KEY } from '../../API_KEY';
+import { API_KEYs } from '../../API_KEYs';
 import { MistralChatMessage } from '../interfaces/mistral-chat-message';
 import { Message } from '../interfaces/message';
 
@@ -10,7 +10,7 @@ import { Message } from '../interfaces/message';
 })
 
 export class MistralApiService {
-  private readonly API_KEY: string = API_KEY.MISTRAL_API_KEY;
+  private readonly API_KEY: string = API_KEYs.MISTRAL_API_KEY;
   private readonly CLIENT: Mistral = new Mistral({ apiKey: this.API_KEY });
   private readonly MODEL: string = 'mistral-large-latest';
 

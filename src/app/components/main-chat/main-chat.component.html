@@ -35,6 +35,15 @@
           {{ currentUser?.username }}
         </p>
 
+        <select
+          [(ngModel)]="selectAIVersion"
+          class="select-ai-version"
+          (change)="saveAIProviderChange()"
+        >
+          <option value="gemini-2.5">gemini-2.5</option>
+          <option value="mistral-ai">mistral-ai</option>
+        </select>
+
         <button
           class="logout-btn"
           (click)="toLogout()"

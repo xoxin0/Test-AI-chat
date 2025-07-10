@@ -32,6 +32,8 @@ import { User } from '../../interfaces/user';
 import { AuthService } from '../../services/auth.service';
 import { UsersApiService } from '../../services/users-api.service';
 import { ErrorAlertService } from '../../services/error-alert.service';
+import { GeminiApiService } from '../../services/gemini-ai.service';
+import { ScrollToBottomService } from '../../services/scroll-to-bottom.service';
 
 @Component({
   selector: 'app-main-chat',
@@ -54,6 +56,7 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   public isLoading: boolean = false;
   public sidebarIsOpen: boolean = false;
   public currentUser: User | null = null;
+  public selectAIVersion: string = 'gemini-ai';
 
   protected readonly _clipboardService: HeaderCodeService = inject(HeaderCodeService);
   protected readonly window: Window = window;
@@ -65,6 +68,8 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   private readonly _mistralApiService: MistralApiService = inject(MistralApiService);
   private readonly _authService: AuthService = inject(AuthService);
   private readonly _usersApiService: UsersApiService = inject(UsersApiService);
+  private readonly _geminiApiService: GeminiApiService = inject(GeminiApiService);
+  private readonly _scrollService = inject(ScrollToBottomService);
   private readonly _destroy$: any = new Subject<void>();
   private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
 
@@ -74,6 +79,7 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   public ngOnInit(): void {
     this.loadCurrentUser();
     this.loadUsersAndChats();
+    this.loadSelectedAI();
     this._focusInputService.focusInput();
   }
 
@@ -86,6 +92,57 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     this._destroy$.next();
     this._destroy$.complete();
     this._clipboardService.cleanupBlobUrl();
+  }
+
+  public async sendMessage(): Promise<void> {
+    if (!this.userInput.trim() || this.isLoading) return;
+
+    const userMessage: string = this.userInput.trim();
+    const currentChat = this.chats.find(c => c.id === this.activeChat);
+
+    this.userInput = '';
+    this.isLoading = true;
+    this.textareaRef.nativeElement.style.height = 'auto';
+
+    if (!currentChat) return;
+
+    currentChat.messages.push({ text: userMessage, isUser: true });
+
+    if (currentChat.title === 'Новый чат' && userMessage.length > 0) {
+      currentChat.title = userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage;
+    }
+
+    this.saveChatsToUser();
+    setTimeout(() => this._scrollService.scrollToBottom(this.messagesContainer), 0);
+
+    try {
+      let response: string;
+      const contextualMessages: Message[] = this.prepareContextualMessages(currentChat.messages);
+
+      if (this.selectAIVersion === 'gemini-2.5') {
+        response = await this._geminiApiService.getAPIResponse(contextualMessages);
+      } else {
+        response = await this._mistralApiService.getAPIResponse(contextualMessages);
+      }
+
+      currentChat.messages.push({ text: response, isUser: false });
+      this.saveChatsToUser();
+    } catch (err) {
+      currentChat.messages.push({
+        text: 'Извините, произошла ошибка при получении ответа. Попробуйте еще раз.',
+        isUser: false
+      });
+
+      this._errorAlertService.showErrorMistralResponseNotification();
+      this.saveChatsToUser();
+    } finally {
+      this.isLoading = false;
+      setTimeout((): void => this._scrollService.scrollToBottom(this.messagesContainer), 0);
+    }
+  }
+
+  public saveAIProviderChange(): void {
+    this._localService.saveData('selectedAI', this.selectAIVersion);
   }
 
   public adjustTextareaHeight(): void {
@@ -112,22 +169,60 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     return chat ? chat.messages : [];
   }
 
+  public onCloseSidebar(isOpen: boolean): void {
+    this.sidebarIsOpen = isOpen;
+  }
+
   public toLogout(): void {
     this._authService.logout();
   }
 
-  private scrollToBottom(): void {
-    setTimeout(() => {
-      if (this.messagesContainer) {
-        const container: HTMLElement = this.messagesContainer.nativeElement;
-        container.scrollTop = container.scrollHeight;
+  public addNewChat(): void {
+    const newChat: Chat = {
+      id: Date.now().toString(),
+      title: `Новый чат`,
+      messages: [{ text: this.INITIAL_MESSAGE, isUser: false }]
+    };
+
+    this.chats.push(newChat);
+    this.activeChat = newChat.id;
+    this.saveChatsToUser();
+    this._localService.saveData('activeChat', this.activeChat);
+    setTimeout(() => this._scrollService.scrollToBottom(this.messagesContainer), 0);
+    setTimeout(() => this._focusInputService.focusInput(), 0);
+  }
+
+  public onSelectChat(chatId: string): void {
+    this.activeChat = chatId;
+    this._localService.saveData('activeChat', chatId);
+    this._scrollService.scrollToBottom(this.messagesContainer);
+    this._focusInputService.focusInput();
+    this.onCloseSidebar(false);
+  }
+
+  public onRemoveChat(chatId: string): void {
+    const indexChat = this.chats.findIndex(c => c.id === chatId);
+    if (indexChat === -1) return;
+
+    this.chats.splice(indexChat, 1);
+
+    if (chatId === this.activeChat) {
+      this.activeChat = this.chats[0]?.id || '';
+
+      if (this.chats.length === 0) {
+        this.addNewChat();
+        return;
       }
-    }, 0);
+    }
+
+    this.saveChatsToUser();
   }
 
   private loadCurrentUser(): void {
-    if (this._localService.getData('currentUser')) {
+    try {
       this.currentUser = JSON.parse(<string>this._localService.getData('currentUser'));
+    } catch (error) {
+      console.error('Ошибка при загрузке пользователя');
     }
   }
 
@@ -152,6 +247,7 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     }
 
     const activeChat: string | null = this._localService.getData('activeChat');
+
     if (activeChat && this.chats.some(c => c.id === activeChat)) {
       this.activeChat = activeChat;
     } else {
@@ -162,28 +258,29 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
       this.addNewChat();
     }
 
-    setTimeout(() => this.scrollToBottom(), 0);
+    setTimeout(() => this._scrollService.scrollToBottom(this.messagesContainer), 0);
   }
 
-  public addNewChat(): void {
-    const newChat: Chat = {
-      id: Date.now().toString(),
-      title: `Новый чат`,
-      messages: [{ text: this.INITIAL_MESSAGE, isUser: false }]
-    };
+  private loadSelectedAI(): void {
+    const savedAI: string | null = this._localService.getData('selectedAI');
+    savedAI ? this.selectAIVersion = savedAI : this.selectAIVersion = 'gemini-ai';
+  }
 
-    this.chats.push(newChat);
-    this.activeChat = newChat.id;
-    this.saveChatsToUser();
-    this._localService.saveData('activeChat', this.activeChat);
-    setTimeout(() => this.scrollToBottom(), 0);
-    setTimeout(() => this._focusInputService.focusInput(), 0);
+  private prepareContextualMessages(messages: Message[]): Message[] {
+    const maxMessages = 50; // optional
+
+    if (messages.length <= maxMessages) {
+      return messages;
+    }
+
+    const firstMessage: Message = messages[0];
+    const recentMessages: Message[] = messages.slice(-maxMessages + 1);
+
+    return [firstMessage, ...recentMessages];
   }
 
   private saveChatsToUser(): void {
-    if (!this.currentUser) {
-      return;
-    }
+    if (!this.currentUser) return;
 
     this.currentUser.chats = this.chats;
     this._localService.saveData('currentUser', JSON.stringify(this.currentUser));
@@ -200,77 +297,5 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
       .subscribe();
 
     this._localService.saveData('activeChat', this.activeChat);
-  }
-
-  public onSelectChat(chatId: string): void {
-    this.activeChat = chatId;
-    this._localService.saveData('activeChat', chatId);
-    this.scrollToBottom();
-    this._focusInputService.focusInput();
-    this.onCloseSidebar(false);
-  }
-
-  public onRemoveChat(chatId: string): void {
-    const indexChat = this.chats.findIndex(c => c.id === chatId);
-    if (indexChat === -1) return;
-
-    this.chats.splice(indexChat, 1);
-
-    if (chatId === this.activeChat) {
-      this.activeChat = this.chats[0]?.id || '';
-
-      if (this.chats.length === 0) {
-        this.addNewChat();
-        return;
-      }
-    }
-
-    this.saveChatsToUser();
-  }
-
-  public onCloseSidebar(isOpen: boolean): void {
-    this.sidebarIsOpen = isOpen;
-  }
-
-  public async sendMessage(): Promise<void> {
-    if (!this.userInput.trim() || this.isLoading) return;
-
-    const userMessage: string = this.userInput.trim();
-    this.userInput = '';
-
-    if (this.textareaRef) {
-      this.textareaRef.nativeElement.style.height = 'auto';
-    }
-
-    const currentChat = this.chats.find(c => c.id === this.activeChat);
-    if (!currentChat) return;
-
-    currentChat.messages.push({ text: userMessage, isUser: true });
-
-    if (currentChat.title === 'Новый чат' && userMessage.length > 0) {
-      currentChat.title = userMessage.length > 30 ? userMessage.substring(0, 30) + '...' : userMessage;
-    }
-
-    this.saveChatsToUser();
-    setTimeout(() => this.scrollToBottom(), 0);
-
-    this.isLoading = true;
-
-    try {
-      const response: string = await this._mistralApiService.getAPIResponse(currentChat.messages);
-      currentChat.messages.push({ text: response, isUser: false });
-      this.saveChatsToUser();
-    } catch (err) {
-      currentChat.messages.push({
-        text: 'Извините, произошла ошибка при получении ответа. Попробуйте еще раз.',
-        isUser: false
-      });
-
-      this._errorAlertService.showErrorMistralResponseNotification();
-      this.saveChatsToUser();
-    } finally {
-      this.isLoading = false;
-      setTimeout((): void => this.scrollToBottom(), 0);
-    }
   }
 }
