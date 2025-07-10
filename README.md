@@ -26,7 +26,8 @@ npm install
 4. Создайте файл в папке `src` - `API.KEY.ts` и добавьте в него ключ Mistal API (предварительно получив его).
 ```ts
 export const API_KEYs = {
-  MISTRAL_API_KEY: 'ваш ключ'
+  MISTRAL_API_KEY: 'ваш ключ',
+  GEMINI_API_KEY: 'ваш ключ'
 };
 ```
 
