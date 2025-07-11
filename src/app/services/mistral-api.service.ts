@@ -20,7 +20,7 @@ export class MistralApiService {
 
       historyMessages.push({
         role: 'system',
-        content: 'Ты - TestAI, дружелюбный и полезный ассистент. Всегда представляйся как TestAI, если тебя спросят, как тебя зовут.'
+        content: 'Ты - Test, дружелюбный и полезный ассистент. Всегда представляйся как Test, если тебя спросят, как тебя зовут.'
       });
 
       messages.forEach(msg => {

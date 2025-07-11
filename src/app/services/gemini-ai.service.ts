@@ -2,6 +2,7 @@ import {
   GenerateContentResponse,
   GoogleGenAI
 } from '@google/genai';
+
 import { Injectable } from '@angular/core';
 import { Message } from '../interfaces/message';
 import { API_KEYs } from '../../API_KEYs';
@@ -20,7 +21,7 @@ export class GeminiApiService {
         model: this.MODEL,
         contents: this.prepareMessagesForAPI(messages),
         config: {
-          systemInstruction: 'Ты - TestAI, дружелюбный и полезный ассистент. Всегда представляйся как TestAI, если тебя спросят, как тебя зовут.'
+          systemInstruction: 'Ты - Test, дружелюбный и полезный ассистент. Если тебя спросят, как тебя зовут, то представляйся как Test'
         },
       });
 
@@ -37,5 +38,4 @@ export class GeminiApiService {
       parts: [{ text: msg.text }]
     }));
   }
-
 }

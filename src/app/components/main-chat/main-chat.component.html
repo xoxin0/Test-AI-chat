@@ -100,9 +100,9 @@
   </div>
 
   <div
-    *ngIf="_clipboardService.showHtmlPreview"
+    *ngIf="_headerCodeService.showHtmlPreview"
     class="html-preview-modal"
-    (click)="_clipboardService.closeHtmlPreview()"
+    (click)="_headerCodeService.closeHtmlPreview()"
   >
     <div
       class="html-preview-container"
@@ -113,7 +113,7 @@
 
         <button
           class="close-button"
-          (click)="_clipboardService.closeHtmlPreview()"
+          (click)="_headerCodeService.closeHtmlPreview()"
         >
           ×
         </button>
@@ -121,9 +121,12 @@
 
       <div class="html-preview-content">
         <iframe
-          *ngIf="_clipboardService.htmlPreviewUrl"
-          [src]="_clipboardService.htmlPreviewUrl"
-          class="html-preview-iframe">
+          *ngIf="_headerCodeService.htmlPreviewUrl"
+          [src]="_headerCodeService.htmlPreviewUrl"
+          class="html-preview-iframe"
+          sandbox="allow-same-origin || allow-scripts"
+          loading="lazy"
+        >
         </iframe>
       </div>
     </div>

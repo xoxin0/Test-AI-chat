@@ -51,7 +51,7 @@
 
         .select-ai-version {
           align-self: center;
-          margin-right: 10px;
+          margin-right: 20px;
           background-color: $background-color;
           color: $light-color;
           border-radius: 5px;
@@ -382,9 +382,15 @@
 
         .logo {
           margin: 10px 0 10px 15px;
+          width: 50px;
+          height: 20px;
         }
 
         .user-info {
+          .select-ai-version {
+            margin-left: 15px;
+          }
+
           .logout-btn {
             position: absolute;
             top: 10px;

@@ -58,20 +58,20 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   public currentUser: User | null = null;
   public selectAIVersion: string = 'gemini-ai';
 
-  protected readonly _clipboardService: HeaderCodeService = inject(HeaderCodeService);
+  protected readonly _headerCodeService: HeaderCodeService = inject(HeaderCodeService);
   protected readonly window: Window = window;
 
   private _allUsers: User[] = [];
-  private readonly _errorAlertService = inject(ErrorAlertService);
+  private readonly _errorAlertService: ErrorAlertService = inject(ErrorAlertService);
   private readonly _localService: LocalStorageService = inject(LocalStorageService);
   private readonly _focusInputService: FocusInputService = inject(FocusInputService);
   private readonly _mistralApiService: MistralApiService = inject(MistralApiService);
   private readonly _authService: AuthService = inject(AuthService);
   private readonly _usersApiService: UsersApiService = inject(UsersApiService);
   private readonly _geminiApiService: GeminiApiService = inject(GeminiApiService);
-  private readonly _scrollService = inject(ScrollToBottomService);
+  private readonly _scrollService: ScrollToBottomService = inject(ScrollToBottomService);
   private readonly _destroy$: any = new Subject<void>();
-  private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут TestAI. Чем я могу вам помочь сегодня?';
+  private readonly INITIAL_MESSAGE: string = 'Привет! Меня зовут Test. Чем я могу вам помочь сегодня?';
 
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
   @ViewChild('textareaRef') private textareaRef!: ElementRef<HTMLTextAreaElement>;
@@ -84,14 +84,14 @@ export class MainChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   public ngAfterViewChecked(): void {
-    this._clipboardService.highlightCodeBlocks();
-    this._clipboardService.addCopyButtonsAndViewToCodeBlocks();
+    this._headerCodeService.highlightCodeBlocks();
+    this._headerCodeService.addCopyButtonsAndViewToCodeBlocks();
   }
 
   public ngOnDestroy(): void {
     this._destroy$.next();
     this._destroy$.complete();
-    this._clipboardService.cleanupBlobUrl();
+    this._headerCodeService.cleanupBlobUrl();
   }
 
   public async sendMessage(): Promise<void> {
